@@ -1,0 +1,150 @@
+{
+  "info": {
+    "name": "Tickr API",
+    "description": "API collection for Tickr - events, users, and health. Matches [api.md](../api.md).\n\n**Base URL:** `http://localhost:8080/tickr/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "eventId",
+      "value": "123e4567-e89b-12d3-a456-426614174000"
+    },
+    {
+      "key": "userId",
+      "value": "123e4567-e89b-12d3-a456-426614174000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Health check endpoints.",
+      "item": [
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickr/api/v1/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickr", "api", "v1", "ping"]
+            },
+            "description": "Check if the API is running.\n\n**Response:** `200 OK` with body `\"pong\"`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "description": "Event CRUD. Base path: `/tickr/api/v1/event`",
+      "item": [
+        {
+          "name": "Get All Events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickr/api/v1/event/getevents",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickr", "api", "v1", "event", "getevents"]
+            },
+            "description": "Retrieve all events.\n\n**Response:** `200 OK` - Array of Event objects (id, owner, assignedUsers, title, description, startTime, endTime, source, createdAt)."
+          }
+        },
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"assigned_user_ids\": [\n    \"223e4567-e89b-12d3-a456-426614174001\",\n    \"323e4567-e89b-12d3-a456-426614174002\"\n  ],\n  \"title\": \"Team Meeting\",\n  \"description\": \"Weekly sync\",\n  \"start_time\": \"2024-01-15T10:00:00Z\",\n  \"end_time\": \"2024-01-15T11:00:00Z\",\n  \"source\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tickr/api/v1/event/addevent",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickr", "api", "v1", "event", "addevent"]
+            },
+            "description": "Create a new event with assigned users. Reminders are created automatically for owner + assigned users (default channel SMS).\n\n**Request fields:** owner_id (required), assigned_user_ids (optional), title (required), description (optional), start_time (required), end_time (optional), source (required, string converted to integer).\n\n**Response:** `200 OK` - Created Event.\n\n**Errors:** 400 Bad Request, 404 if owner or assigned user not found."
+          }
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickr/api/v1/event/deleteevent/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickr", "api", "v1", "event", "deleteevent", "{{eventId}}"]
+            },
+            "description": "Delete an event by ID.\n\n**Path:** eventId (UUID).\n\n**Response:** `204 No Content`.\n\n**Errors:** 404 if event not found."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "User CRUD. Base path: `/tickr/api/v1/user`",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickr/api/v1/user/getusers",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickr", "api", "v1", "user", "getusers"]
+            },
+            "description": "Retrieve all users.\n\n**Response:** `200 OK` - Array of User objects (id, phoneNumber, timezone, createdAt)."
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickr/api/v1/user/getuser/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickr", "api", "v1", "user", "getuser", "{{userId}}"]
+            },
+            "description": "Retrieve a specific user by ID.\n\n**Path:** userId (UUID).\n\n**Response:** `200 OK` - User object.\n\n**Errors:** 404 if user not found."
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"+1234567890\",\n  \"timezone\": \"America/New_York\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tickr/api/v1/user/adduser",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickr", "api", "v1", "user", "adduser"]
+            },
+            "description": "Create a new user.\n\n**Request fields:** phone_number (required, E.164 recommended), timezone (required, IANA e.g. America/New_York).\n\n**Response:** `200 OK` - Created User (id, phoneNumber, timezone, createdAt).\n\n**Errors:** 400 Bad Request, 409 Conflict if phone number already exists."
+          }
+        }
+      ]
+    }
+  ]
+}

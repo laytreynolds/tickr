@@ -7,7 +7,6 @@ spring:
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: update
       dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: false
     properties:
@@ -16,9 +15,30 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
-
-# Scheduler configuration
+    locations: classpath:db/migration
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enabled: true
 scheduler:
   reminder:
-    poll-rate-ms: 60000
+    poll-rate-ms: 10000
+    sms_username: ${SMS_USERNAME}
+    sms_password: ${SMS_PASSWORD}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
 

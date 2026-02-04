@@ -17,5 +17,4 @@ public interface ReminderRepository extends JpaRepository<Reminder, UUID> {
               and r.remindAt <= :now
             """)
     List<Reminder> findDueReminders(@Param("now") Instant now);
-
 }
