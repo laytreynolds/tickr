@@ -1,10 +1,12 @@
 package com.tickr.tickr.domain.user;
 
+import com.tickr.tickr.domain.event.Event;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Time;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -26,6 +28,10 @@ public class User {
 
     @Column(nullable = false)
     private String timezone;
+
+    @ManyToMany(mappedBy = "assignedUsers")
+    @Builder.Default
+    private Set<Event> assignedEvents = new HashSet<>(); // Events this user is assigned to
 
     @Column(nullable = false, updatable = false)
     @Builder.Default

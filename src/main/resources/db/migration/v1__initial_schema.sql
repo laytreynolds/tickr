@@ -12,7 +12,7 @@ create table events (
                         description text,
                         start_time timestamptz not null,
                         end_time timestamptz,
-                        source text not null,
+                        source INT not null,
                         created_at timestamptz not null
 );
 

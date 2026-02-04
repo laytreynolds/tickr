@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -21,8 +23,17 @@ public class Event {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(nullable = false, name = "user_id")
+    private User owner; // Owner/creator of the event
+
+    @ManyToMany
+    @JoinTable(
+            name = "event_users",
+            joinColumns = @JoinColumn(name = "event_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @Builder.Default
+    private Set<User> assignedUsers = new HashSet<>(); // Users assigned to the event
 
     @Column(nullable = false)
     private String title;
@@ -35,17 +46,21 @@ public class Event {
     private Instant endTime;
 
     @Column(nullable = false)
-    private String source; // MANUAL, GOOGLE, OUTLOOK
+    private Integer source; // MANUAL, GOOGLE, OUTLOOK
 
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
 
-    public User getUser() {
-        return user;
+    public enum Source {
+        API, GOOGLE, EMAIL
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
     }
 }
