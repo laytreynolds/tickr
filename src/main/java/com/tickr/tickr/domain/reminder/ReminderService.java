@@ -97,7 +97,7 @@ public class ReminderService {
                             .user(user)
                             .remindAt(remindAt)
                             .status(Reminder.Status.PENDING)
-                            .channel(Reminder.Channel.SMS)
+                            .channel(Reminder.Channel.EMAIL)
                             .build();
                     reminders.add(reminder);
                 }
