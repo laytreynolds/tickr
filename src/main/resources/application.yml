@@ -26,7 +26,8 @@ spring:
         smtp:
           auth: true
           starttls:
-            enabled: true
+            enable: true
+            required: true
 scheduler:
   reminder:
     poll-rate-ms: 10000
