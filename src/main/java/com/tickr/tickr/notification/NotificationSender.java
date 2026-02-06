@@ -1,7 +1,5 @@
 package com.tickr.tickr.notification;
 
-import com.tickr.tickr.http.HttpRequestBuilder.HttpResponse;
-
 import com.tickr.tickr.domain.notification.Notification;
 
 /**
