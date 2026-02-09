@@ -25,4 +25,8 @@ public class CreateEventRequest {
     private Instant endTime;
 
     private String source;
+
+    @JsonProperty("timezone")
+    private String timezone;
+
 }

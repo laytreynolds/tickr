@@ -30,9 +30,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/tickr/api/v1/auth/")
-                || path.equals("/tickr/api/v1/ping")
-                || path.equals("/actuator/health");
+        return path.startsWith("/tickr/api/v1/auth/**")
+                || path.startsWith("/tickr/api/v1/ping/**")
+                || path.startsWith("/actuator/**");
     }
 
     @Override

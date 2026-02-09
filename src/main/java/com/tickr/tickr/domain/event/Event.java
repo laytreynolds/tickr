@@ -26,19 +26,17 @@ public class Event {
     @JoinColumn(nullable = false, name = "user_id")
     private User owner; // Owner/creator of the event
 
-    @ManyToMany
-    @JoinTable(
-            name = "event_users",
-            joinColumns = @JoinColumn(name = "event_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<User> assignedUsers = new HashSet<>(); // Users assigned to the event
+    private Set<EventUser> assignedUsers = new HashSet<>(); // Users assigned to the event
 
     @Column(nullable = false)
     private String title;
 
     private String description;
+
+    @Column(nullable = false)
+    private String timezone;
 
     @Column(nullable = false)
     private Instant startTime;

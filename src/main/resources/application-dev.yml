@@ -1,9 +1,17 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+
 springdoc:
   swagger-ui:
     enabled: true
   api-docs: 
       enabled: true
+
+logging:
+  level:
+    org.flywaydb: DEBUG
+
+management:
+  endpoints.web.exposure.include: health,metrics,flyway

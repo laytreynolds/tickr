@@ -2,6 +2,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+
 springdoc:
   swagger-ui:
     enabled: false

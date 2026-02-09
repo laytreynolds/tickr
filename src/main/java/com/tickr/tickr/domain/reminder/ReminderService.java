@@ -1,6 +1,7 @@
 package com.tickr.tickr.domain.reminder;
 
 import com.tickr.tickr.domain.event.Event;
+import com.tickr.tickr.domain.event.EventUser;
 import com.tickr.tickr.domain.notification.Notification;
 import com.tickr.tickr.domain.notification.NotificationService;
 import com.tickr.tickr.domain.user.User;
@@ -39,7 +40,7 @@ public class ReminderService {
 
     @Transactional
     public void sendDueReminders() {
-        List<Reminder> reminders = reminderRepository.findDueReminders(Instant.now());        
+        List<Reminder> reminders = reminderRepository.findDueReminders(Instant.now());
         int successCount = 0;
         int failureCount = 0;
         for (Reminder reminder : reminders) {
@@ -81,11 +82,13 @@ public class ReminderService {
                 return;
             }
 
-            // Get all users who should receive reminders (owner + assigned users)
+            // Get all users who should receive reminders
             Set<User> usersToNotify = new HashSet<>();
             usersToNotify.add(event.getOwner());
             if (event.getAssignedUsers() != null) {
-                usersToNotify.addAll(event.getAssignedUsers());
+                for (EventUser eventUser : event.getAssignedUsers()) {
+                    usersToNotify.add(eventUser.getUser());
+                }
             }
 
             // Create reminders for each user and each timestamp

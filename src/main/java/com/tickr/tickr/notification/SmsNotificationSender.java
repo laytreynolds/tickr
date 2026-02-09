@@ -24,8 +24,8 @@ public class SmsNotificationSender implements NotificationSender {
 
     public SmsNotificationSender(
             HttpRequestBuilder httpRequestBuilder,
-            @Value("${scheduler.reminder.sms_username}") String username,
-            @Value("${scheduler.reminder.sms_password}") String password) {
+            @Value("${sms.username}") String username,
+            @Value("${sms.password}") String password) {
         this.httpRequestBuilder = httpRequestBuilder;
         this.username = username;
         this.password = password;
