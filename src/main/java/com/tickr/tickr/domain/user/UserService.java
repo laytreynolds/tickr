@@ -5,9 +5,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.tickr.tickr.dto.CreateUserRequest;
+import com.tickr.tickr.util.Timezone;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.TimeZone;
 
 @Service
 @RequiredArgsConstructor
@@ -30,13 +33,13 @@ public class UserService {
             throw new IllegalArgumentException("Password is required");
         }
 
-        User user = User.builder()
-        .phoneNumber(request.getPhoneNumber())
-        .timezone(request.getTimezone())
-        .passwordHash(passwordEncoder.encode(request.getPassword()))
-        .build();
+        String timezone = request.getTimezone();
+        Timezone.validateTimezone(timezone);
 
-        return userRepository.save(user);
+        return userRepository.save(User.builder()
+                .phoneNumber(request.getPhoneNumber())
+                .timezone(timezone)
+                .passwordHash(passwordEncoder.encode(request.getPassword())).build());
     }
-}
 
+}

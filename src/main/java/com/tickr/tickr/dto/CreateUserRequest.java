@@ -9,7 +9,9 @@ public class CreateUserRequest {
     @JsonProperty("phoneNumber")
     private String phoneNumber;
     
+    @JsonProperty("timezone")
     private String timezone;
 
+    @JsonProperty("password")
     private String password;
 }
