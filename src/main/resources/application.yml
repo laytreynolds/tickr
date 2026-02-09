@@ -15,7 +15,7 @@ spring:
     password: ${DB_PASSWORD}
 
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: ${DB_PLATFORM}
     hibernate:
       ddl-auto: validate
     properties:
@@ -29,8 +29,8 @@ spring:
     connect-retries: 10
 
   mail:
-    host: smtp.gmail.com
-    port: 587
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     properties.mail.smtp:
