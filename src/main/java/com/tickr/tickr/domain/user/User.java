@@ -1,6 +1,6 @@
 package com.tickr.tickr.domain.user;
 
-import com.tickr.tickr.domain.event.Event;
+import com.tickr.tickr.domain.event.EventUser;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,9 +34,9 @@ public class User {
     @Column(nullable = false, name = "password_hash")
     private String passwordHash;
 
-    @ManyToMany(mappedBy = "assignedUsers")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<Event> assignedEvents = new HashSet<>(); // Events this user is assigned to
+    private Set<EventUser> assignedEvents = new HashSet<>(); // Events this user is assigned to
 
     @Column(nullable = false, updatable = false)
     @Builder.Default

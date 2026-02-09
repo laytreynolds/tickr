@@ -1,45 +1,51 @@
+server:
+  forward-headers-strategy: framework
+
+
 spring:
   application:
     name: Tickr
+    
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/tickr}
+    url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+
   jpa:
+    database-platform: ${DB_PLATFORM}
     hibernate:
-      dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: false
+      ddl-auto: validate
     properties:
-      hibernate:
-        jdbc:
-          time_zone: UTC
+      hibernate.jdbc.time_zone: UTC
+
   flyway:
-    enabled: true
-    locations: classpath:db/migration
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:true}
+    validate-on-migrate: ${SPRING_FLYWAY_VALIDATE_ON_MIGRATE:true}
+    locations: ${SPRING_FLYWAY_LOCATIONS}
+    connect-retries: 10
+
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
+    properties.mail.smtp:
+      auth: true
+      starttls.enable: true
+      starttls.required: true
+
 scheduler:
   reminder:
     poll-rate-ms: 10000
-    sms_username: ${SMS_USERNAME}
-    sms_password: ${SMS_PASSWORD}
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics
-security:
-  jwt:
-    secret: ${JWT_SECRET}
-    expiration-ms: ${JWT_EXPIRATION_MS:900000}
 
+sms:
+  username: ${SMS_USERNAME}
+  password: ${SMS_PASSWORD}
+
+security.jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}

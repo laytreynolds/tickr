@@ -34,14 +34,19 @@ public class EventService {
                 .orElseThrow(() -> new IllegalArgumentException("owner not found with id: " + request.getOwnerId()));
 
         // Fetch assigned users
-        Set<User> assignedUsers = new HashSet<>();
-        
+        Set<EventUser> assignedUsers = new HashSet<>();
+
         if (request.getAssignedUserIds() != null && !request.getAssignedUserIds().isEmpty()) {
             List<User> users = userRepository.findAllByIdIn(request.getAssignedUserIds());
             if (users.size() != request.getAssignedUserIds().size()) {
                 throw new IllegalArgumentException("One or more assigned users not found");
             }
-            assignedUsers = new HashSet<>(users);
+            for (User user : users) {
+                assignedUsers.add(EventUser.builder()
+                        .id(new EventUser.EventUserId())
+                        .user(user)
+                        .build());
+            }
         }
 
         // Build and save event
@@ -52,11 +57,16 @@ public class EventService {
                 .description(request.getDescription())
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
+                .timezone(request.getTimezone())
                 .source(Integer.parseInt(request.getSource()))
                 .build();
-        
+
+        for (EventUser assignment : assignedUsers) {
+            assignment.setEvent(event);
+        }
+
         Event savedEvent = eventRepository.save(event);
-        
+
         // Create reminders for the event after it's persisted
         // If reminder creation fails, log the error but don't fail event creation
         try {
@@ -64,10 +74,10 @@ public class EventService {
         } catch (Exception e) {
             log.error("Failed to create reminders for event {}: {}", savedEvent.getId(), e.getMessage(), e);
         }
-        
+
         return savedEvent;
     }
-    
+
     public void deleteEvent(UUID id) {
         this.eventRepository.deleteById(id);
     }
