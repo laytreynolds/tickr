@@ -4,15 +4,18 @@ import com.tickr.tickr.domain.notification.Notification;
 import com.tickr.tickr.domain.reminder.Reminder;
 import com.tickr.tickr.dto.EmailNotification;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 /**
  * Sends email notifications via JavaMail (SMTP). Configure in application.yml
- * under spring.mail (host, port, username, password).
+ * under spring.mail (host, port, username, password). Only registered when
+ * JavaMailSender is available (e.g. MAIL_* set or not using dev profile).
  */
 @Component
+@ConditionalOnBean(JavaMailSender.class)
 public class EmailNotificationSender implements NotificationSender {
 
     private final JavaMailSender mailSender;
