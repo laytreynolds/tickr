@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { RemindersPage } from './features/reminders/RemindersPage'
 import { LoginPage } from './features/auth/LoginPage'
+import logo from './assets/logo.png'
 import {
   clearAuthStorage,
   setAuthToken,
@@ -13,21 +14,22 @@ interface AuthState {
   expiresInMs: number
 }
 
+function getStoredAuth(): AuthState | null {
+  try {
+    const stored = window.localStorage.getItem('tickr_auth')
+    return stored ? (JSON.parse(stored) as AuthState) : null
+  } catch {
+    return null
+  }
+}
+
 function App() {
-  const [auth, setAuth] = useState<AuthState | null>(null)
+  const [auth, setAuth] = useState<AuthState | null>(getStoredAuth)
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem('tickr_auth')
-      if (stored) {
-        const parsed = JSON.parse(stored) as AuthState
-        setAuth(parsed)
-        setAuthToken(parsed.accessToken)
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, [])
+    if (auth) setAuthToken(auth.accessToken)
+    else setAuthToken(null)
+  }, [auth])
 
   const handleLogout = () => {
     setAuth(null)
@@ -53,9 +55,7 @@ function App() {
       <div className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-tickr-600 text-sm font-bold text-white shadow-sm">
-              T
-            </div>
+            <img src={logo} alt="Tickr" className="h-12 w-12 rounded-lg object-contain" />
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-base font-semibold tracking-tight text-slate-900">
