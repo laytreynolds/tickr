@@ -2,6 +2,7 @@ import { type FormEvent, useMemo, useState } from 'react'
 import axios from 'axios'
 import { apiClient } from '../../lib/apiClient'
 import { CreateUserForm, type CreateUserFormErrors } from '../../components/CreateUserForm'
+import FadeIn from '../../components/FadeIn'
 
 function getLocalTimezone(): string {
   try {
@@ -82,6 +83,7 @@ export function AdminPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6">
+      <FadeIn>
       <header className="flex flex-col gap-4 border-b border-slate-200 pb-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -92,7 +94,7 @@ export function AdminPage() {
           </p>
         </div>
       </header>
-
+      </FadeIn>
       {successMessage && (
         <div
           role="status"
@@ -101,20 +103,21 @@ export function AdminPage() {
           {successMessage}
         </div>
       )}
-
-      <CreateUserForm
-        phoneNumber={phoneNumber}
-        password={password}
-        confirmPassword={confirmPassword}
-        fieldErrors={fieldErrors}
-        error={error}
-        isSubmitting={isSubmitting}
-        timezone={timezone}
-        onPhoneNumberChange={setPhoneNumber}
-        onPasswordChange={setPassword}
-        onConfirmPasswordChange={setConfirmPassword}
-        onSubmit={handleSubmit}
-      />
+      <FadeIn delay={0.2}>
+        <CreateUserForm
+          phoneNumber={phoneNumber}
+          password={password}
+          confirmPassword={confirmPassword}
+          fieldErrors={fieldErrors}
+          error={error}
+          isSubmitting={isSubmitting}
+          timezone={timezone}
+          onPhoneNumberChange={setPhoneNumber}
+          onPasswordChange={setPassword}
+          onConfirmPasswordChange={setConfirmPassword}
+          onSubmit={handleSubmit}
+        />
+      </FadeIn>
     </div>
   )
 }

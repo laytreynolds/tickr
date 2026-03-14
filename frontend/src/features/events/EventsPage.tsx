@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CreateEventRequest, User } from './types'
 import { useCreateEvent, useEvents, useUsers } from './api'
 import { EventsTable } from '../../components/EventsTable'
+import FadeIn from '../../components/FadeIn'
+
 
 const TITLE_MAX_LENGTH = 500
 const DESCRIPTION_MAX_LENGTH = 2000
@@ -240,6 +242,7 @@ export function EventsPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6">
+      <FadeIn>
       <header className="flex flex-col gap-4 border-b border-slate-200 pb-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -274,6 +277,7 @@ export function EventsPage() {
           </button>
         </div>
       </header>
+      </FadeIn>
 
       {successMessage && (
         <div
@@ -284,13 +288,16 @@ export function EventsPage() {
         </div>
       )}
 
+      <FadeIn delay={0.2}>
+
       <EventsTable
         events={eventsQuery.data ?? []}
         users={usersQuery.data ?? []}
         isLoading={eventsQuery.isLoading}
-        isError={eventsQuery.isError}
-        showEmptyState={showEmptyState}
-      />
+          isError={eventsQuery.isError}
+          showEmptyState={showEmptyState}
+        />
+      </FadeIn>
 
       {showAddModal && (
         <div

@@ -106,6 +106,8 @@ export function RemindersPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Reminders
           </h1>
+          
+            
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Search, filter, and manage outgoing reminders from Tickr.
           </p>
@@ -115,7 +117,7 @@ export function RemindersPage() {
           onClick={() => remindersQuery.refetch()}
           className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
           disabled={remindersQuery.isFetching}
-        >
+          >
           {remindersQuery.isFetching ? (
             <span className="inline-flex items-center gap-2">
               <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent dark:border-slate-500 dark:border-t-tickr-400" />
@@ -127,8 +129,12 @@ export function RemindersPage() {
         </button>
       </header>
       </FadeIn>
-      <RemindersSearchBar filters={filters} onFiltersChange={setFilters} />
 
+      <FadeIn delay={0.1}>
+      <RemindersSearchBar filters={filters} onFiltersChange={setFilters} />
+      </FadeIn>
+
+      <FadeIn delay={0.2}>
       <RemindersTable
         reminders={filteredReminders}
         isLoading={remindersQuery.isLoading}
@@ -137,6 +143,7 @@ export function RemindersPage() {
         onDeleteClick={handleDeleteClick}
         isDeletePending={deleteReminder.isPending}
       />
+      </FadeIn>
 
       {reminderToDelete && (
         <ConfirmDialog
