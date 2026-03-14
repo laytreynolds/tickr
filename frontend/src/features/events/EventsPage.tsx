@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { CreateEventRequest, Event, User } from './types'
+import type { CreateEventRequest, User } from './types'
 import { useCreateEvent, useEvents, useUsers } from './api'
 
 const TITLE_MAX_LENGTH = 500
@@ -21,7 +21,7 @@ const COMMON_TIMEZONES = [
 function getTimeZoneOptions(): string[] {
   if (typeof Intl !== 'undefined' && 'supportedValuesOf' in Intl) {
     try {
-      return (Intl as Intl.IntlStatic & { supportedValuesOf?(key: string): string[] })
+      return (Intl as unknown as { supportedValuesOf: (key: string) => string[] })
         .supportedValuesOf('timeZone') as string[]
     } catch {
       // fallback
@@ -144,10 +144,6 @@ export function EventsPage() {
 
   useEffect(() => {
     if (showAddModal) {
-      setFormState((prev) => ({
-        ...prev,
-        timezone: prev.timezone || (Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'),
-      }))
       cancelButtonRef.current?.focus()
     }
   }, [showAddModal])
