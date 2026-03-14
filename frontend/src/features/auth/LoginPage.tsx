@@ -1,5 +1,6 @@
-import { FormEvent, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 import { apiClient, setAuthToken } from '../../lib/apiClient'
+import logo from '../../assets/logo.png'
 
 interface AuthResponse {
   accessToken: string
@@ -50,9 +51,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-tickr-600 text-sm font-bold text-white shadow-sm">
-            T
-          </div>
+          <img src={logo} alt="Tickr" className="h-12 w-12 rounded-lg object-contain" />
           <div>
             <h1 className="text-lg font-semibold tracking-tight text-slate-900">
               Tickr
