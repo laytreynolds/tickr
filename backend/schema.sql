@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict GRbl77agKVNGu0d1Iuch6n0jq9yQgu1h2Q44PhnLOB9PhY9O5HB9tFrg6pOVEQl
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
@@ -197,5 +196,4 @@ ALTER TABLE ONLY public.reminders
 -- PostgreSQL database dump complete
 --
 
-\unrestrict GRbl77agKVNGu0d1Iuch6n0jq9yQgu1h2Q44PhnLOB9PhY9O5HB9tFrg6pOVEQl
 
