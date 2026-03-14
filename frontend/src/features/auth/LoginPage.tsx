@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { apiClient, setAuthToken } from '../../lib/apiClient'
 import logo from '../../assets/logo.png'
+import { ThemeToggle } from '../../components/ThemeToggle'
 
 interface AuthResponse {
   accessToken: string
@@ -67,15 +68,18 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
         <div className="mb-6 flex items-center gap-3">
           <img src={logo} alt="Tickr" className="h-12 w-12 rounded-lg object-contain" />
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-slate-900">
+            <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               Tickr
             </h1>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Sign in to manage your reminders.
             </p>
           </div>

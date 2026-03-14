@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CreateEventRequest, User } from './types'
 import { useCreateEvent, useEvents, useUsers } from './api'
+import { EventsTable } from '../../components/EventsTable'
 
 const TITLE_MAX_LENGTH = 500
 const DESCRIPTION_MAX_LENGTH = 2000
@@ -83,25 +84,6 @@ function localInZoneToISO(
     }
   }
   return new Date(Date.UTC(y, mo - 1, d, h, min ?? 0, 0, 0)).toISOString()
-}
-
-function formatDateTime(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Invalid date'
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
-}
-
-function descriptionSnippet(description: string | null | undefined, maxLen: number): string {
-  if (description == null || description === '') return '—'
-  const trimmed = description.trim()
-  if (trimmed.length <= maxLen) return trimmed
-  return trimmed.slice(0, maxLen) + '…'
 }
 
 interface FormState {
@@ -249,20 +231,21 @@ export function EventsPage() {
     [validateAndBuildRequest, createEvent, closeAddModal],
   )
 
-  const showEmptyState =
+  const showEmptyState = Boolean(
     !eventsQuery.isLoading &&
-    !eventsQuery.isError &&
-    eventsQuery.data &&
-    eventsQuery.data.length === 0
+      !eventsQuery.isError &&
+      eventsQuery.data &&
+      eventsQuery.data.length === 0,
+  )
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <header className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-4 border-b border-slate-200 pb-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Events
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Create and view events. Times are shown in each event&apos;s timezone.
           </p>
         </div>
@@ -270,12 +253,12 @@ export function EventsPage() {
           <button
             type="button"
             onClick={() => eventsQuery.refetch()}
-            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tickr-500 focus-visible:ring-offset-2"
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tickr-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
             disabled={eventsQuery.isFetching}
           >
             {eventsQuery.isFetching ? (
               <span className="inline-flex items-center gap-2">
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent dark:border-slate-500 dark:border-t-tickr-400" />
                 Refreshing…
               </span>
             ) : (
@@ -295,117 +278,19 @@ export function EventsPage() {
       {successMessage && (
         <div
           role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
         >
           {successMessage}
         </div>
       )}
 
-      <section className="flex-1 rounded-xl border border-slate-200 bg-white shadow-sm">
-        {eventsQuery.isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <div className="flex flex-col items-center gap-2 text-slate-500">
-              <span className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-tickr-500" />
-              <span className="text-sm">Loading events…</span>
-            </div>
-          </div>
-        ) : eventsQuery.isError ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-            <p className="text-sm font-medium text-red-600">
-              Failed to load events
-            </p>
-            <p className="max-w-md text-xs text-slate-500">
-              Please ensure the Tickr backend is running and try again.
-            </p>
-          </div>
-        ) : showEmptyState ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-            <p className="text-sm font-medium text-slate-900">No events yet</p>
-            <p className="max-w-md text-xs text-slate-500">
-              Click &quot;Add event&quot; to create your first event.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl">
-            <div className="hidden md:block">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Title
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Description
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Start
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      End
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Timezone
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Owner
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {(eventsQuery.data ?? []).map((event) => (
-                    <tr key={event.id} className="hover:bg-slate-50/60">
-                      <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                        {event.title}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600 max-w-[200px] truncate">
-                        {descriptionSnippet(event.description, 60)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-900">
-                        {formatDateTime(event.startTime)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-900">
-                        {event.endTime ? formatDateTime(event.endTime) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
-                        {event.timezone}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
-                        {userById(event.ownerId)?.phoneNumber ?? event.ownerId ?? '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="grid gap-3 p-3 md:hidden">
-              {(eventsQuery.data ?? []).map((event) => (
-                <article
-                  key={event.id}
-                  className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
-                >
-                  <h2 className="text-sm font-semibold text-slate-900">
-                    {event.title}
-                  </h2>
-                  <p className="text-xs text-slate-600 line-clamp-2">
-                    {descriptionSnippet(event.description, 80)}
-                  </p>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                    <span>Start: {formatDateTime(event.startTime)}</span>
-                    {event.endTime && (
-                      <span>End: {formatDateTime(event.endTime)}</span>
-                    )}
-                    <span>{event.timezone}</span>
-                    <span>
-                      Owner: {userById(event.ownerId)?.phoneNumber ?? event.ownerId ?? '—'}
-                    </span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
+      <EventsTable
+        events={eventsQuery.data ?? []}
+        users={usersQuery.data ?? []}
+        isLoading={eventsQuery.isLoading}
+        isError={eventsQuery.isError}
+        showEmptyState={showEmptyState}
+      />
 
       {showAddModal && (
         <div
