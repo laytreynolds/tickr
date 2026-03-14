@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { RemindersPage } from './features/reminders/RemindersPage'
 import { LoginPage } from './features/auth/LoginPage'
+import { RegisterPage } from './features/auth/RegisterPage'
 import logo from './assets/logo.png'
 import {
   clearAuthStorage,
@@ -25,6 +26,8 @@ function getStoredAuth(): AuthState | null {
 
 function App() {
   const [auth, setAuth] = useState<AuthState | null>(getStoredAuth)
+  const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login')
+  const [authNotice, setAuthNotice] = useState<string | null>(null)
 
   useEffect(() => {
     if (auth) setAuthToken(auth.accessToken)
@@ -42,12 +45,33 @@ function App() {
       setAuth(null)
       setAuthToken(null)
       clearAuthStorage()
+      setAuthScreen('login')
     })
     return () => setOnUnauthorized(null)
   }, [])
 
   if (!auth) {
-    return <LoginPage onLoginSuccess={setAuth} />
+    if (authScreen === 'register') {
+      return (
+        <RegisterPage
+          onBackToLogin={(notice) => {
+            setAuthNotice(notice ?? null)
+            setAuthScreen('login')
+          }}
+        />
+      )
+    }
+
+    return (
+      <LoginPage
+        onLoginSuccess={setAuth}
+        notice={authNotice}
+        onNavigateToRegister={() => {
+          setAuthNotice(null)
+          setAuthScreen('register')
+        }}
+      />
+    )
   }
 
   return (
