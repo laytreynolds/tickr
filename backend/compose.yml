@@ -27,13 +27,13 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - backend
+      - tickr-backend
       - proxy_network
 
 volumes:
   postgres_data:
 
 networks:
-  backend:
+  tickr-backend:
   proxy_network:
     external: true

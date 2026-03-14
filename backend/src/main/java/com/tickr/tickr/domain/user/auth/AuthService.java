@@ -28,6 +28,7 @@ public class AuthService {
         try {
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     request.phoneNumber(), request.password());
+                    
             authenticationManager.authenticate(authToken);
 
             User user = userRepository.findByPhoneNumber(request.phoneNumber())
