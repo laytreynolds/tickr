@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Blue colour theme for Tickr */
+  --color-tickr-200: #bae6fd;
+  --color-tickr-500: #0ea5e9;
+  --color-tickr-600: #0284c7;
+  --color-tickr-700: #0369a1;
+}
