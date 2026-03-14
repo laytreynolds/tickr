@@ -8,7 +8,7 @@ export default defineConfig({
     proxy: {
       // Proxy API calls to the Spring Boot backend in dev
       '/tickr': {
-        target: 'http://tickr-api:8080',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },
