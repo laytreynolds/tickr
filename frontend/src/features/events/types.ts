@@ -12,6 +12,9 @@ export interface Event {
   createdAt: string
 }
 
+/** Reminder channel values accepted by the API (create event). */
+export type ReminderChannel = 'SMS' | 'PHONE' | 'EMAIL'
+
 /** Request body for POST addevent (snake_case). */
 export interface CreateEventRequest {
   owner_id: string
@@ -22,6 +25,8 @@ export interface CreateEventRequest {
   end_time?: string
   source: string
   timezone: string
+  /** Channels for reminders (SMS, PHONE, EMAIL). If empty, backend defaults to EMAIL. */
+  channels?: ReminderChannel[]
 }
 
 /** User from GET getusers for owner/assignee dropdowns. */

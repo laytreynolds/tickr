@@ -1,5 +1,7 @@
 package com.tickr.tickr.domain.reminder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -33,6 +35,7 @@ public class ReminderChannel {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "reminder_id", nullable = false)
+    @JsonIgnore
     private Reminder reminder;
 
     @Enumerated(EnumType.STRING)

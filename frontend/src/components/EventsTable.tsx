@@ -14,6 +14,8 @@ interface EventsTableProps {
   isLoading: boolean
   isError: boolean
   showEmptyState: boolean
+  onDeleteClick: (event: Event) => void
+  isDeletePending: boolean
 }
 
 function getOwnerDisplay(users: User[], ownerId: string): string {
@@ -27,6 +29,8 @@ export function EventsTable({
   isLoading,
   isError,
   showEmptyState,
+  onDeleteClick,
+  isDeletePending,
 }: EventsTableProps) {
   return (
     <section className="flex-1 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800">
@@ -95,6 +99,12 @@ export function EventsTable({
                   >
                     Owner
                   </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                  >
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-800">
@@ -121,6 +131,16 @@ export function EventsTable({
                     <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                       {getOwnerDisplay(users, event.ownerId)}
                     </td>
+                    <td className="px-4 py-3 text-right text-sm">
+                      <button
+                        type="button"
+                        onClick={() => onDeleteClick(event)}
+                        className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
+                        disabled={isDeletePending}
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -144,6 +164,16 @@ export function EventsTable({
                   {event.endTime && <span>End: {formatDateTime(event.endTime)}</span>}
                   <span>{event.timezone}</span>
                   <span>Owner: {getOwnerDisplay(users, event.ownerId)}</span>
+                </div>
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => onDeleteClick(event)}
+                    className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
+                    disabled={isDeletePending}
+                  >
+                    Delete
+                  </button>
                 </div>
               </article>
             ))}

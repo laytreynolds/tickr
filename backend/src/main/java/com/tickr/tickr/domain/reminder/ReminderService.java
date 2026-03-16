@@ -41,6 +41,11 @@ public class ReminderService {
     }
 
     @Transactional
+    public void deleteRemindersForEvent(UUID eventId) {
+        reminderRepository.deleteByEventId(eventId);
+    }
+
+    @Transactional
     public void sendDueReminders() {
         List<Reminder> reminders = reminderRepository.findDueReminders(Instant.now());
         int successCount = 0;

@@ -1,5 +1,56 @@
+import { Fragment, useMemo } from 'react'
 import type { Reminder, ReminderChannel, ReminderStatus } from '../features/reminders/types'
 import { formatDateTime } from '../utils/formatDateTime'
+
+const CHANNEL_ORDER: ReminderChannel[] = ['SMS', 'PHONE', 'EMAIL']
+
+interface EventChannelGroup {
+  eventId: string
+  eventName: string
+  channels: { channel: ReminderChannel; reminders: Reminder[] }[]
+}
+
+function groupRemindersByEventAndChannel(reminders: Reminder[]): EventChannelGroup[] {
+  const byEvent = new Map<string, Map<ReminderChannel, Reminder[]>>()
+
+  for (const r of reminders) {
+    const eventId = r.event?.id ?? '__no_event__'
+    if (!byEvent.has(eventId)) {
+      byEvent.set(eventId, new Map())
+    }
+    const channels = byEvent.get(eventId)!
+    if (!channels.has(r.channel)) {
+      channels.set(r.channel, [])
+    }
+    channels.get(r.channel)!.push(r)
+  }
+
+  const eventNames = new Map<string, string>()
+  for (const r of reminders) {
+    const id = r.event?.id ?? '__no_event__'
+    const name = r.event?.name?.trim() || 'Untitled event'
+    if (!eventNames.has(id)) eventNames.set(id, name)
+  }
+
+  return Array.from(byEvent.entries())
+    .map(([eventId, channelMap]) => {
+      const channels: { channel: ReminderChannel; reminders: Reminder[] }[] = []
+      for (const ch of CHANNEL_ORDER) {
+        const list = channelMap.get(ch)
+        if (list?.length) {
+          list.sort((a, b) => new Date(a.remindAt).getTime() - new Date(b.remindAt).getTime())
+          channels.push({ channel: ch, reminders: list })
+        }
+      }
+      return {
+        eventId,
+        eventName: eventNames.get(eventId) ?? 'Untitled event',
+        channels,
+      }
+    })
+    .filter((g) => g.channels.length > 0)
+    .sort((a, b) => a.eventName.localeCompare(b.eventName, undefined, { sensitivity: 'base' }))
+}
 
 interface RemindersTableProps {
   reminders: Reminder[]
@@ -18,6 +69,11 @@ export function RemindersTable({
   onDeleteClick,
   isDeletePending,
 }: RemindersTableProps) {
+  const grouped = useMemo(
+    () => groupRemindersByEventAndChannel(reminders),
+    [reminders],
+  )
+
   return (
     <section className="flex-1 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800">
       {isLoading ? (
@@ -88,91 +144,116 @@ export function RemindersTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-800">
-                {reminders.map((reminder) => (
-                  <tr
-                    key={reminder.id}
-                    className="hover:bg-slate-50/60 dark:bg-slate-800 dark:hover:bg-slate-700/80"
-                  >
-                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
-                      <div className="font-medium">
-                        {reminder.event?.name || 'Untitled event'}
-                      </div>
-                      <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        {reminder.user?.name || 'Unknown user'}
-                        {reminder.user?.email ? ` • ${reminder.user.email}` : ''}
-                        {reminder.user?.phoneNumber ? ` • ${reminder.user.phoneNumber}` : ''}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
-                      <div>{formatDateTime(reminder.remindAt)}</div>
-                      <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        Created {formatDateTime(reminder.createdAt)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <ChannelBadge channel={reminder.channel} />
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <StatusBadge status={reminder.status} />
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm">
-                      <button
-                        type="button"
-                        onClick={() => onDeleteClick(reminder)}
-                        className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
-                        disabled={isDeletePending}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
+                {grouped.map((group) => (
+                  <Fragment key={group.eventId}>
+                    {group.channels.map(({ channel, reminders: channelReminders }) => (
+                      <Fragment key={`${group.eventId}-${channel}`}>
+                        <tr className="bg-slate-100 dark:bg-slate-700/50">
+                          <td
+                            colSpan={5}
+                            className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300"
+                          >
+                            {group.eventName} — {channel}
+                          </td>
+                        </tr>
+                        {channelReminders.map((reminder) => (
+                          <tr
+                            key={reminder.id}
+                            className="hover:bg-slate-50/60 dark:bg-slate-800 dark:hover:bg-slate-700/80"
+                          >
+                            <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
+                              <div className="font-medium">
+                                {reminder.event?.name || 'Untitled event'}
+                              </div>
+                              <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                {reminder.user?.name || 'Unknown user'}
+                                {reminder.user?.email ? ` • ${reminder.user.email}` : ''}
+                                {reminder.user?.phoneNumber ? ` • ${reminder.user.phoneNumber}` : ''}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
+                              <div>{formatDateTime(reminder.remindAt)}</div>
+                              <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                Created {formatDateTime(reminder.createdAt)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <ChannelBadge channel={reminder.channel} />
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <StatusBadge status={reminder.status} />
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm">
+                              <button
+                                type="button"
+                                onClick={() => onDeleteClick(reminder)}
+                                className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
+                                disabled={isDeletePending}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </Fragment>
+                    ))}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="grid gap-3 p-3 md:hidden">
-            {reminders.map((reminder) => (
-              <article
-                key={reminder.id}
-                className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-600 dark:bg-slate-800"
+          <div className="grid gap-4 p-3 md:hidden">
+            {grouped.map((group) => (
+              <div
+                key={group.eventId}
+                className="rounded-xl border border-slate-200 dark:border-slate-600"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {reminder.event?.name || 'Untitled event'}
-                    </h2>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      {reminder.user?.name || 'Unknown user'}
-                      {reminder.user?.email ? ` • ${reminder.user.email}` : ''}
-                      {reminder.user?.phoneNumber ? ` • ${reminder.user.phoneNumber}` : ''}
-                    </p>
-                  </div>
-                  <StatusBadge status={reminder.status} />
+                <h2 className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-900 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-100">
+                  {group.eventName}
+                </h2>
+                <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {group.channels.map(({ channel, reminders: channelReminders }) => (
+                    <div key={channel} className="bg-white dark:bg-slate-800">
+                      <h3 className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        {channel}
+                      </h3>
+                      {channelReminders.map((reminder) => (
+                        <article
+                          key={reminder.id}
+                          className="flex flex-col gap-3 border-t border-slate-100 px-3 py-3 dark:border-slate-700"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {reminder.user?.name || 'Unknown user'}
+                              {reminder.user?.email ? ` • ${reminder.user.email}` : ''}
+                              {reminder.user?.phoneNumber ? ` • ${reminder.user.phoneNumber}` : ''}
+                            </p>
+                            <StatusBadge status={reminder.status} />
+                          </div>
+                          <div className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
+                            <div>
+                              <p className="font-medium text-slate-700 dark:text-slate-200">Remind at</p>
+                              <p>{formatDateTime(reminder.remindAt)}</p>
+                            </div>
+                            <ChannelBadge channel={reminder.channel} />
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => onDeleteClick(reminder)}
+                              className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
+                              disabled={isDeletePending}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ))}
                 </div>
-
-                <div className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
-                  <div>
-                    <p className="font-medium text-slate-700 dark:text-slate-200">Remind at</p>
-                    <p>{formatDateTime(reminder.remindAt)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-slate-700 dark:text-slate-200">Channel</p>
-                    <ChannelBadge channel={reminder.channel} />
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => onDeleteClick(reminder)}
-                    className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
-                    disabled={isDeletePending}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </article>
+              </div>
             ))}
           </div>
         </div>
