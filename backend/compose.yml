@@ -23,12 +23,26 @@ services:
     restart: always
     env_file:
       - .env
+    ports:
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - tickr-backend
       - proxy_network
+
+  promtail:
+    image: grafana/promtail:2.9.3
+    container_name: tickr-promtail
+    restart: unless-stopped
+    volumes:
+      # Read container log files directly (avoids Docker API version mismatch)
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+    command: -config.file=/etc/promtail/promtail-config.yml
+    networks:
+      - tickr-backend
 
 volumes:
   postgres_data:
