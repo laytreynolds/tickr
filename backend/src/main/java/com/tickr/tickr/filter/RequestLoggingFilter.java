@@ -38,6 +38,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
                 ? auth.getName()
                 : "anonymous";
         int status = response.getStatus();
-        log.info("Request: method={}, uri={}, status={}, user={}", method, fullUri, status, user);
+        log.info("Request: method={}, uri={}, status={}, user={} remote_address={}", method, fullUri, status, user, request.getRemoteAddr());
     }
 }
