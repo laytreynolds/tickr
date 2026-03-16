@@ -63,18 +63,18 @@ class AuthControllerTest {
 
         @Test
         @WithMockUser
-        @DisplayName("should propagate BadCredentialsException when credentials are invalid")
-        void shouldPropagateExceptionWhenCredentialsInvalid() {
+        @DisplayName("should return 401 with error message when credentials are invalid")
+        void shouldReturn401WhenCredentialsInvalid() throws Exception {
             AuthRequest request = new AuthRequest("+15551234567", "wrongpassword");
 
             given(authService.login(any(AuthRequest.class)))
                     .willThrow(new BadCredentialsException("Invalid credentials"));
 
-            org.junit.jupiter.api.Assertions.assertThrows(Exception.class, () ->
-                    mockMvc.perform(post("/tickr/api/v1/auth/login")
+            mockMvc.perform(post("/tickr/api/v1/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-            );
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.message").value("Invalid credentials."));
 
             then(authService).should().login(any(AuthRequest.class));
         }

@@ -29,7 +29,15 @@ function getStoredAuth(): AuthState | null {
 type MainTab = 'reminders' | 'events' | 'admin'
 
 function App() {
-  const [auth, setAuth] = useState<AuthState | null>(getStoredAuth)
+  const [auth, setAuth] = useState<AuthState | null>(() => {
+    const stored = getStoredAuth()
+    if (stored) {
+      // Ensure the auth token is set synchronously on initial load
+      // so that any data-fetching hooks (e.g. React Query) use it
+      setAuthToken(stored.accessToken)
+    }
+    return stored
+  })
   const [activeTab, setActiveTab] = useState<MainTab>('reminders')
 
   useEffect(() => {

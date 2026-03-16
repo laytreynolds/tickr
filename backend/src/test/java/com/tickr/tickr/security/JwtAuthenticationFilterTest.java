@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("JwtAuthenticationFilter")
@@ -44,11 +43,14 @@ class JwtAuthenticationFilterTest {
     @Mock
     private FilterChain filterChain;
 
+    @Mock
+    private SecurityErrorWriter securityErrorWriter;
+
     private JwtAuthenticationFilter filter;
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthenticationFilter(jwtDecoder, userDetailsService);
+        filter = new JwtAuthenticationFilter(jwtDecoder, userDetailsService, securityErrorWriter);
         SecurityContextHolder.clearContext();
     }
 
@@ -149,11 +151,13 @@ class JwtAuthenticationFilterTest {
         void shouldReturn401WhenJwtInvalid() throws Exception {
             String token = "invalid-jwt-token";
             given(request.getHeader("Authorization")).willReturn("Bearer " + token);
+            given(request.getMethod()).willReturn("GET");
+            given(request.getRequestURI()).willReturn("/tickr/api/v1/event/getevents");
             given(jwtDecoder.decode(token)).willThrow(new JwtException("Invalid token"));
 
             filter.doFilterInternal(request, response, filterChain);
 
-            verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            then(securityErrorWriter).should().write(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token.");
             then(filterChain).should(never()).doFilter(request, response);
         }
 
