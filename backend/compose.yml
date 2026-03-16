@@ -39,7 +39,7 @@ services:
     volumes:
       # Read container log files directly (avoids Docker API version mismatch)
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ./promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /opt/Tickr/backend/promtail-config.yml:/etc/promtail/promtail-config.yml:ro    
     command: -config.file=/etc/promtail/promtail-config.yml
     networks:
       - tickr-backend
