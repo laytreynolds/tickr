@@ -45,6 +45,7 @@ scheduler:
 sms:
   username: ${SMS_USERNAME}
   password: ${SMS_PASSWORD}
+  url: ${SMS_URL}
 
 security.jwt:
   secret: ${JWT_SECRET}

@@ -16,7 +16,7 @@ import java.util.List;
 @Component
 public class SmsNotificationSender implements NotificationSender {
 
-    private static final String URL = "https://rest.clicksend.com/v3/sms/send";
+    private static final String URL = "${sms.url}";
 
     private final HttpRequestBuilder httpRequestBuilder;
     private final String username;
