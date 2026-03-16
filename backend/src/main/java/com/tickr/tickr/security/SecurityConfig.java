@@ -22,6 +22,8 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+
+import com.tickr.tickr.filter.RequestLoggingFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
@@ -37,7 +39,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            RequestLoggingFilter requestLoggingFilter,
+            JsonAuthenticationEntryPoint jsonAuthenticationEntryPoint,
+            JsonAccessDeniedHandler jsonAccessDeniedHandler) throws Exception {
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -54,8 +59,17 @@ public class SecurityConfig {
                                 "/swagger-ui/index.html")
                         .permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jsonAuthenticationEntryPoint)
+                        .accessDeniedHandler(jsonAccessDeniedHandler))
+                .addFilterBefore(requestLoggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    @Bean
+    public RequestLoggingFilter requestLoggingFilter() {
+        return new RequestLoggingFilter();
     }
 
     @Bean
@@ -82,8 +96,8 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtDecoder jwtDecoder,
-            UserDetailsService userDetailsService) {
-        return new JwtAuthenticationFilter(jwtDecoder, userDetailsService);
+            UserDetailsService userDetailsService, SecurityErrorWriter securityErrorWriter) {
+        return new JwtAuthenticationFilter(jwtDecoder, userDetailsService, securityErrorWriter);
     }
 
     @Bean

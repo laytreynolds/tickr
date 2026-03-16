@@ -17,22 +17,31 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final String INVALID_TOKEN_MESSAGE = "Invalid or expired token.";
 
     private final JwtDecoder jwtDecoder;
     private final UserDetailsService userDetailsService;
+    private final SecurityErrorWriter securityErrorWriter;
 
-    public JwtAuthenticationFilter(JwtDecoder jwtDecoder, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtDecoder jwtDecoder, UserDetailsService userDetailsService,
+                                   SecurityErrorWriter securityErrorWriter) {
         this.jwtDecoder = jwtDecoder;
         this.userDetailsService = userDetailsService;
+        this.securityErrorWriter = securityErrorWriter;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/tickr/api/v1/auth/**")
-                || path.startsWith("/tickr/api/v1/ping/**")
-                || path.startsWith("/actuator/**");
+        return path.startsWith("/tickr/api/v1/auth")
+                || path.startsWith("/tickr/api/v1/ping")
+                || path.startsWith("/actuator");
     }
 
     @Override
@@ -63,8 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
         } catch (JwtException ex) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
+            log.warn("JWT validation failed for {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+            securityErrorWriter.write(response, HttpServletResponse.SC_UNAUTHORIZED, INVALID_TOKEN_MESSAGE);
         }
     }
 }
