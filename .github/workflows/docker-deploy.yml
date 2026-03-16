@@ -21,10 +21,11 @@ jobs:
             git reset --hard origin/main
             echo "Setting environment variables"
             echo "${{ secrets.ENV }}" > .env
-            # Ensure promtail config exists as a file (it's gitignored; otherwise Docker creates a dir and mount fails)
+            # Promtail config: always replace (file or dir) so we never leave a directory in place
             echo "Setting promtail config"
-            if [ ! -f promtail-config.yml ]; then
-              [ -d promtail-config.yml ] && rm -rf promtail-config.yml
-              echo "${{ secrets.PROMTAIL_CONFIG_YML }}" > promtail-config.yml
-            fi
+            rm -rf promtail/promtail-config.yml
+            mkdir -p promtail
+            cat > promtail/promtail-config.yml << 'PROMTAIL_EOF'
+            ${{ secrets.PROMTAIL_CONFIG_YML }}
+            PROMTAIL_EOF
             docker compose -f compose.yml up -d --build --remove-orphans

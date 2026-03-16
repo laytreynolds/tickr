@@ -37,10 +37,10 @@ services:
     container_name: tickr-promtail
     restart: unless-stopped
     volumes:
-      # Read container log files directly (avoids Docker API version mismatch)
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /opt/Tickr/backend/promtail-config.yml:/etc/promtail/promtail-config.yml:ro    
-    command: -config.file=/etc/promtail/promtail-config.yml
+      # Use /config to avoid any image default at /etc/promtail
+      - /opt/Tickr/backend/promtail:/config:ro
+    command: -config.file=/config/promtail-config.yml
     networks:
       - tickr-backend
 
