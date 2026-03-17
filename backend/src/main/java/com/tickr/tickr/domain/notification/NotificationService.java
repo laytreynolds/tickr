@@ -1,6 +1,7 @@
 package com.tickr.tickr.domain.notification;
 
 import com.tickr.tickr.domain.reminder.Reminder;
+import com.tickr.tickr.domain.reminder.ReminderChannel;
 
 import org.springframework.stereotype.Service;
 
@@ -19,14 +20,29 @@ public class NotificationService {
     }
 
     /**
-     * Create a notification for the given reminder (SMS, email, etc. based on reminder channel).
+     * Create notifications for all channels configured on the reminder.
      */
-    public Notification create(Reminder reminder) {
+    public List<Notification> createAll(Reminder reminder) {
+        List<Reminder.Channel> channels = reminder.getChannels().stream()
+                .map(ReminderChannel::getChannel)
+                .distinct()
+                .toList();
+
+        if (channels.isEmpty()) {
+            throw new IllegalStateException("No channels configured for reminder: " + reminder.getId());
+        }
+
+        return channels.stream()
+                .map(channel -> createForChannel(reminder, channel))
+                .toList();
+    }
+
+    private Notification createForChannel(Reminder reminder, Reminder.Channel channel) {
         for (NotificationBuilder builder : builders) {
-            if (builder.supports(reminder)) {
-                return builder.build(reminder);
+            if (builder.supports(channel)) {
+                return builder.build(reminder, channel);
             }
         }
-        throw new IllegalStateException("No builder found for reminder channel: " + reminder.getChannel());
+        throw new IllegalStateException("No builder found for reminder channel: " + channel);
     }
 }

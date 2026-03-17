@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -38,6 +40,10 @@ public class Reminder {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Channel channel;
+
+    @OneToMany(mappedBy = "reminder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<ReminderChannel> channels = new HashSet<>();
 
     @Column(nullable = false, updatable = false)
     @Builder.Default

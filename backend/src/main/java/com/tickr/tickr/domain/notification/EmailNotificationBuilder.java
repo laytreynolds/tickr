@@ -12,14 +12,14 @@ import org.springframework.stereotype.Component;
 public class EmailNotificationBuilder implements NotificationBuilder {
 
     @Override
-    public boolean supports(Reminder reminder) {
-        return reminder != null && reminder.getChannel() == Reminder.Channel.EMAIL;
+    public boolean supports(Reminder.Channel channel) {
+        return channel == Reminder.Channel.EMAIL;
     }
 
     @Override
-    public Notification build(Reminder reminder) {
-        if (!supports(reminder)) {
-            throw new IllegalArgumentException("EmailNotificationBuilder does not support " + reminder.getChannel());
+    public Notification build(Reminder reminder, Reminder.Channel channel) {
+        if (!supports(channel)) {
+            throw new IllegalArgumentException("EmailNotificationBuilder does not support " + channel);
         }
         String to = "laytreynolds@hotmail.com";
         String subject = "Reminder: " + reminder.getEvent().getTitle();

@@ -1,4 +1,6 @@
+import { Fragment } from 'react'
 import type { Event, User } from '../features/events/types'
+import type { Reminder } from '../features/reminders/types'
 import { formatDateTime } from '../utils/formatDateTime'
 
 function descriptionSnippet(description: string | null | undefined, maxLen: number): string {
@@ -11,9 +13,14 @@ function descriptionSnippet(description: string | null | undefined, maxLen: numb
 interface EventsTableProps {
   events: Event[]
   users: User[]
+  reminders: Reminder[]
+  expandedEventId: string | null
+  onToggleExpand: (eventId: string) => void
   isLoading: boolean
   isError: boolean
   showEmptyState: boolean
+  onDeleteClick: (event: Event) => void
+  isDeletePending: boolean
 }
 
 function getOwnerDisplay(users: User[], ownerId: string): string {
@@ -24,10 +31,18 @@ function getOwnerDisplay(users: User[], ownerId: string): string {
 export function EventsTable({
   events,
   users,
+  reminders,
+  expandedEventId,
+  onToggleExpand,
   isLoading,
   isError,
   showEmptyState,
+  onDeleteClick,
+  isDeletePending,
 }: EventsTableProps) {
+  function getRemindersForEvent(eventId: string): Reminder[] {
+    return reminders.filter((r) => r.event?.id === eventId)
+  }
   return (
     <section className="flex-1 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800">
       {isLoading ? (
@@ -59,6 +74,13 @@ export function EventsTable({
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
               <thead className="bg-slate-50 dark:bg-slate-800">
                 <tr>
+                  <th
+                    scope="col"
+                    className="w-9 px-1 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                    aria-label="Expand reminders"
+                  >
+                    <span className="sr-only">Expand</span>
+                  </th>
                   <th
                     scope="col"
                     className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
@@ -95,58 +117,189 @@ export function EventsTable({
                   >
                     Owner
                   </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                  >
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-800">
-                {events.map((event) => (
-                  <tr
-                    key={event.id}
-                    className="hover:bg-slate-50/60 dark:bg-slate-800 dark:hover:bg-slate-700/80"
-                  >
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-200">
-                      {event.title}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 max-w-[200px] truncate dark:text-slate-300">
-                      {descriptionSnippet(event.description, 60)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
-                      {formatDateTime(event.startTime)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
-                      {event.endTime ? formatDateTime(event.endTime) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                      {event.timezone}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                      {getOwnerDisplay(users, event.ownerId)}
-                    </td>
-                  </tr>
-                ))}
+                {events.map((event) => {
+                  const eventReminders = getRemindersForEvent(event.id)
+                  const isExpanded = expandedEventId === event.id
+                  return (
+                    <Fragment key={event.id}>
+                      <tr
+                        className="hover:bg-slate-50/60 dark:bg-slate-800 dark:hover:bg-slate-700/80"
+                      >
+                        <td className="w-9 px-1 py-3 align-top">
+                          {eventReminders.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => onToggleExpand(event.id)}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tickr-500 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-slate-200 dark:focus-visible:ring-tickr-400"
+                              aria-expanded={isExpanded}
+                              aria-label={isExpanded ? 'Collapse reminders' : `Expand ${eventReminders.length} reminder(s)`}
+                            >
+                              <span
+                                className={`inline-block transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                aria-hidden
+                              >
+                                ▼
+                              </span>
+                            </button>
+                          ) : (
+                            <span className="inline-block h-7 w-7" aria-hidden />
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-200">
+                          {event.title}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600 max-w-[200px] truncate dark:text-slate-300">
+                          {descriptionSnippet(event.description, 60)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
+                          {formatDateTime(event.startTime)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
+                          {event.endTime ? formatDateTime(event.endTime) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                          {event.timezone}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                          {getOwnerDisplay(users, event.ownerId)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm">
+                          <button
+                            type="button"
+                            onClick={() => onDeleteClick(event)}
+                            className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
+                            disabled={isDeletePending}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && eventReminders.length > 0 && (
+                        <tr key={`${event.id}-reminders`} className="bg-slate-50/80 dark:bg-slate-800/80">
+                          <td colSpan={8} className="px-4 py-3 pt-0">
+                            <div className="rounded-lg border border-slate-200 bg-white py-2 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+                              <div className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                Reminders ({eventReminders.length})
+                              </div>
+                              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+                                {eventReminders.map((reminder) => (
+                                  <li
+                                    key={reminder.id}
+                                    className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-sm"
+                                  >
+                                    <span className="font-medium text-slate-700 dark:text-slate-200">
+                                      {formatDateTime(reminder.remindAt)}
+                                    </span>
+                                    <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-600 dark:text-slate-200">
+                                      {reminder.channel}
+                                    </span>
+                                    <span
+                                      className={`rounded px-2 py-0.5 text-xs font-medium ${
+                                        reminder.status === 'PENDING'
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
+                                          : reminder.status === 'SENT'
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+                                      }`}
+                                    >
+                                      {reminder.status}
+                                    </span>
+                                    {reminder.user?.phoneNumber && (
+                                      <span className="text-slate-500 dark:text-slate-400">
+                                        {reminder.user.phoneNumber}
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
               </tbody>
             </table>
           </div>
 
           <div className="grid gap-3 p-3 md:hidden">
-            {events.map((event) => (
-              <article
-                key={event.id}
-                className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-600 dark:bg-slate-800"
-              >
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {event.title}
-                </h2>
-                <p className="text-xs text-slate-600 line-clamp-2 dark:text-slate-300">
-                  {descriptionSnippet(event.description, 80)}
-                </p>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                  <span>Start: {formatDateTime(event.startTime)}</span>
-                  {event.endTime && <span>End: {formatDateTime(event.endTime)}</span>}
-                  <span>{event.timezone}</span>
-                  <span>Owner: {getOwnerDisplay(users, event.ownerId)}</span>
-                </div>
-              </article>
-            ))}
+            {events.map((event) => {
+              const eventReminders = getRemindersForEvent(event.id)
+              const isExpanded = expandedEventId === event.id
+              return (
+                <article
+                  key={event.id}
+                  className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-600 dark:bg-slate-800"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {event.title}
+                    </h2>
+                    {eventReminders.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleExpand(event.id)}
+                        className="inline-flex items-center rounded px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-600"
+                        aria-expanded={isExpanded}
+                      >
+                        {eventReminders.length} reminder{eventReminders.length !== 1 ? 's' : ''}{' '}
+                        {isExpanded ? '▲' : '▼'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-600 line-clamp-2 dark:text-slate-300">
+                    {descriptionSnippet(event.description, 80)}
+                  </p>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                    <span>Start: {formatDateTime(event.startTime)}</span>
+                    {event.endTime && <span>End: {formatDateTime(event.endTime)}</span>}
+                    <span>{event.timezone}</span>
+                    <span>Owner: {getOwnerDisplay(users, event.ownerId)}</span>
+                  </div>
+                  {isExpanded && eventReminders.length > 0 && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/50 py-2 dark:border-slate-600 dark:bg-slate-700/30">
+                      <div className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Reminders
+                      </div>
+                      <ul className="space-y-1.5 px-2">
+                        {eventReminders.map((reminder) => (
+                          <li
+                            key={reminder.id}
+                            className="flex flex-wrap items-center gap-x-2 text-xs text-slate-700 dark:text-slate-300"
+                          >
+                            <span>{formatDateTime(reminder.remindAt)}</span>
+                            <span className="rounded bg-slate-200 px-1.5 py-0.5 dark:bg-slate-600 dark:text-slate-200">
+                              {reminder.channel}
+                            </span>
+                            <span>{reminder.status}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => onDeleteClick(event)}
+                      className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
+                      disabled={isDeletePending}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </div>
       )}

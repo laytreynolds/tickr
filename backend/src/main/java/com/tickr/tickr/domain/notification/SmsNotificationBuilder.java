@@ -9,14 +9,14 @@ import org.springframework.stereotype.Component;
 public class SmsNotificationBuilder implements NotificationBuilder {
 
     @Override
-    public boolean supports(Reminder reminder) {
-        return reminder != null && reminder.getChannel() == Reminder.Channel.SMS;
+    public boolean supports(Reminder.Channel channel) {
+        return channel == Reminder.Channel.SMS;
     }
 
     @Override
-    public Notification build(Reminder reminder) {
-        if (!supports(reminder)) {
-            throw new IllegalArgumentException("SmsNotificationBuilder does not support " + reminder.getChannel());
+    public Notification build(Reminder reminder, Reminder.Channel channel) {
+        if (!supports(channel)) {
+            throw new IllegalArgumentException("SmsNotificationBuilder does not support " + channel);
         }
         String to = reminder.getUser().getPhoneNumber();
         String body = buildBody(reminder);

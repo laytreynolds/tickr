@@ -1,5 +1,6 @@
 package com.tickr.tickr.domain.event;
 
+import com.tickr.tickr.domain.reminder.Reminder;
 import com.tickr.tickr.domain.reminder.ReminderService;
 import com.tickr.tickr.domain.user.User;
 import com.tickr.tickr.domain.user.UserRepository;
@@ -20,6 +21,7 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
@@ -130,7 +132,7 @@ class EventServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.getTitle()).isEqualTo("Team Meeting");
             then(eventRepository).should().save(any(Event.class));
-            then(reminderService).should().createRemindersForEvent(event);
+            then(reminderService).should().createRemindersForEvent(eq(event), any());
         }
 
         @Test
@@ -194,7 +196,7 @@ class EventServiceTest {
             given(userRepository.findById(owner.getId())).willReturn(Optional.of(owner));
             given(eventRepository.save(any(Event.class))).willReturn(event);
             doThrow(new RuntimeException("Reminder creation failed"))
-                    .when(reminderService).createRemindersForEvent(event);
+                    .when(reminderService).createRemindersForEvent(any(Event.class), any());
 
             Event result = eventService.createEvent(request);
 

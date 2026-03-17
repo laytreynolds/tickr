@@ -9,12 +9,13 @@ import com.tickr.tickr.domain.reminder.Reminder;
 public interface NotificationBuilder {
 
     /**
-     * Whether this builder can build a notification for the given reminder's channel.
+     * Whether this builder can build a notification for the given channel.
      */
-    boolean supports(Reminder reminder);
+    boolean supports(Reminder.Channel channel);
 
     /**
-     * Build a notification from the reminder (e.g. recipient and message body from event/user).
+     * Build a notification for the given reminder and channel
+     * (e.g. recipient and message body from event/user).
      */
-    Notification build(Reminder reminder);
+    Notification build(Reminder reminder, Reminder.Channel channel);
 }

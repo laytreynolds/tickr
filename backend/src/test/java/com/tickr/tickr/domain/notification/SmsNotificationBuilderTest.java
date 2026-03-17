@@ -51,29 +51,23 @@ class SmsNotificationBuilderTest {
         @Test
         @DisplayName("should return true for SMS channel")
         void shouldSupportSmsChannel() {
-            Reminder reminder = buildReminder(Reminder.Channel.SMS);
-
-            assertThat(builder.supports(reminder)).isTrue();
+            assertThat(builder.supports(Reminder.Channel.SMS)).isTrue();
         }
 
         @Test
         @DisplayName("should return false for EMAIL channel")
         void shouldNotSupportEmailChannel() {
-            Reminder reminder = buildReminder(Reminder.Channel.EMAIL);
-
-            assertThat(builder.supports(reminder)).isFalse();
+            assertThat(builder.supports(Reminder.Channel.EMAIL)).isFalse();
         }
 
         @Test
         @DisplayName("should return false for PHONE channel")
         void shouldNotSupportPhoneChannel() {
-            Reminder reminder = buildReminder(Reminder.Channel.PHONE);
-
-            assertThat(builder.supports(reminder)).isFalse();
+            assertThat(builder.supports(Reminder.Channel.PHONE)).isFalse();
         }
 
         @Test
-        @DisplayName("should return false for null reminder")
+        @DisplayName("should return false for null channel")
         void shouldReturnFalseForNull() {
             assertThat(builder.supports(null)).isFalse();
         }
@@ -88,7 +82,7 @@ class SmsNotificationBuilderTest {
         void shouldBuildSmsNotification() {
             Reminder reminder = buildReminder(Reminder.Channel.SMS);
 
-            Notification notification = builder.build(reminder);
+            Notification notification = builder.build(reminder, Reminder.Channel.SMS);
 
             assertThat(notification).isInstanceOf(SmsNotification.class);
             SmsNotification sms = (SmsNotification) notification;
@@ -102,7 +96,7 @@ class SmsNotificationBuilderTest {
         void shouldThrowForUnsupportedChannel() {
             Reminder reminder = buildReminder(Reminder.Channel.EMAIL);
 
-            assertThatThrownBy(() -> builder.build(reminder))
+            assertThatThrownBy(() -> builder.build(reminder, Reminder.Channel.EMAIL))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("does not support");
         }

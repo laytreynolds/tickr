@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { CreateEventRequest, User } from './types'
-import { useCreateEvent, useEvents, useUsers } from './api'
+import type { CreateEventRequest, Event, ReminderChannel, User } from './types'
+import { useCreateEvent, useDeleteEvent, useEvents, useUsers } from './api'
+import { useReminders } from '../reminders/api'
 import { EventsTable } from '../../components/EventsTable'
 import FadeIn from '../../components/FadeIn'
 
@@ -88,6 +89,8 @@ function localInZoneToISO(
   return new Date(Date.UTC(y, mo - 1, d, h, min ?? 0, 0, 0)).toISOString()
 }
 
+const REMINDER_CHANNELS: ReminderChannel[] = ['SMS', 'PHONE', 'EMAIL']
+
 interface FormState {
   title: string
   description: string
@@ -99,6 +102,7 @@ interface FormState {
   ownerId: string
   assignedUserIds: string[]
   source: string
+  reminderChannels: ReminderChannel[]
 }
 
 const defaultFormState: FormState = {
@@ -112,25 +116,41 @@ const defaultFormState: FormState = {
   ownerId: '',
   assignedUserIds: [],
   source: '0',
+  reminderChannels: ['SMS'],
 }
 
 export function EventsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null)
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null)
   const [formState, setFormState] = useState<FormState>(defaultFormState)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
+  const deleteCancelRef = useRef<HTMLButtonElement>(null)
 
   const eventsQuery = useEvents()
   const usersQuery = useUsers()
+  const remindersQuery = useReminders()
   const createEvent = useCreateEvent()
+  const deleteEvent = useDeleteEvent()
   const timeZoneOptions = getTimeZoneOptions()
+
+  const handleToggleReminders = useCallback((eventId: string) => {
+    setExpandedEventId((prev) => (prev === eventId ? null : eventId))
+  }, [])
 
   useEffect(() => {
     if (showAddModal) {
       cancelButtonRef.current?.focus()
     }
   }, [showAddModal])
+
+  useEffect(() => {
+    if (eventToDelete) {
+      deleteCancelRef.current?.focus()
+    }
+  }, [eventToDelete])
 
   useEffect(() => {
     if (!showAddModal) return
@@ -144,6 +164,18 @@ export function EventsPage() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [showAddModal])
 
+  useEffect(() => {
+    if (!eventToDelete) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setEventToDelete(null)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [eventToDelete])
+
   const openAddModal = useCallback(() => {
     setFormState({ ...defaultFormState, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC' })
     setSubmitError(null)
@@ -154,6 +186,21 @@ export function EventsPage() {
   const closeAddModal = useCallback(() => {
     setShowAddModal(false)
     setSubmitError(null)
+  }, [])
+
+  const handleDeleteClick = useCallback((event: Event) => {
+    setEventToDelete(event)
+  }, [])
+
+  const handleConfirmDeleteEvent = useCallback(() => {
+    if (!eventToDelete) return
+    deleteEvent.mutate(eventToDelete.id, {
+      onSettled: () => setEventToDelete(null),
+    })
+  }, [eventToDelete, deleteEvent])
+
+  const handleCancelDeleteEvent = useCallback(() => {
+    setEventToDelete(null)
   }, [])
 
   const userById = useCallback(
@@ -193,6 +240,10 @@ export function EventsPage() {
     const owner = userById(formState.ownerId)
     if (!owner) return 'Selected owner is not valid.'
 
+    if (formState.reminderChannels.length === 0) {
+      return 'Select at least one reminder channel (SMS, Phone, or Email).'
+    }
+
     const payload: CreateEventRequest = {
       owner_id: formState.ownerId,
       assigned_user_ids: formState.assignedUserIds.filter((id) => id !== formState.ownerId),
@@ -200,6 +251,7 @@ export function EventsPage() {
       start_time: startTimeISO,
       source: formState.source.trim() || '0',
       timezone: formState.timezone,
+      channels: formState.reminderChannels,
     }
     if (description.length > 0) payload.description = description
     if (endTimeISO) payload.end_time = endTimeISO
@@ -293,10 +345,15 @@ export function EventsPage() {
       <EventsTable
         events={eventsQuery.data ?? []}
         users={usersQuery.data ?? []}
+        reminders={remindersQuery.data ?? []}
+        expandedEventId={expandedEventId}
+        onToggleExpand={handleToggleReminders}
         isLoading={eventsQuery.isLoading}
-          isError={eventsQuery.isError}
-          showEmptyState={showEmptyState}
-        />
+        isError={eventsQuery.isError}
+        showEmptyState={showEmptyState}
+        onDeleteClick={handleDeleteClick}
+        isDeletePending={deleteEvent.isPending}
+      />
       </FadeIn>
 
       {showAddModal && (
@@ -461,6 +518,48 @@ export function EventsPage() {
               </div>
 
               <div>
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Reminder channels (required)
+                </span>
+                <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                  Choose how attendees receive reminders for this event.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  {REMINDER_CHANNELS.map((channel) => (
+                    <label
+                      key={channel}
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 transition-colors has-[:checked]:border-tickr-500 has-[:checked]:bg-tickr-50 has-[:checked]:ring-1 has-[:checked]:ring-tickr-500 dark:border-slate-600 dark:bg-slate-800/50 dark:has-[:checked]:border-tickr-400 dark:has-[:checked]:bg-tickr-900/20 dark:has-[:checked]:ring-tickr-400"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formState.reminderChannels.includes(channel)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormState((prev) => ({
+                              ...prev,
+                              reminderChannels: [...prev.reminderChannels, channel].sort(
+                                (a, b) =>
+                                  REMINDER_CHANNELS.indexOf(a) - REMINDER_CHANNELS.indexOf(b),
+                              ),
+                            }))
+                          } else {
+                            setFormState((prev) => ({
+                              ...prev,
+                              reminderChannels: prev.reminderChannels.filter((c) => c !== channel),
+                            }))
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-slate-300 text-tickr-500 focus:ring-tickr-500"
+                      />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        {channel === 'PHONE' ? 'Phone' : channel}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <label htmlFor="event-owner" className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
                   Owner (required)
                 </label>
@@ -535,6 +634,88 @@ export function EventsPage() {
           </div>
         </div>
       )}
+
+      {eventToDelete && (
+        <ConfirmDialog
+          title="Delete event?"
+          message={`Delete "${eventToDelete.title}"? This will also delete all reminders for this event.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={handleConfirmDeleteEvent}
+          onCancel={handleCancelDeleteEvent}
+          cancelRef={deleteCancelRef}
+          isPending={deleteEvent.isPending}
+        />
+      )}
+    </div>
+  )
+}
+
+interface ConfirmDialogProps {
+  title: string
+  message: string
+  confirmLabel: string
+  cancelLabel: string
+  variant: 'danger'
+  onConfirm: () => void
+  onCancel: () => void
+  cancelRef: React.RefObject<HTMLButtonElement | null>
+  isPending: boolean
+}
+
+function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  cancelLabel,
+  onConfirm,
+  onCancel,
+  cancelRef,
+  isPending,
+}: ConfirmDialogProps) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+      aria-describedby="confirm-dialog-desc"
+    >
+      <div
+        className="absolute inset-0 bg-slate-900/50"
+        aria-hidden="true"
+        onClick={onCancel}
+      />
+      <div className="relative z-10 w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-600 dark:bg-slate-800">
+        <h2
+          id="confirm-dialog-title"
+          className="text-lg font-semibold text-slate-900 dark:text-slate-100"
+        >
+          {title}
+        </h2>
+        <p id="confirm-dialog-desc" className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          {message}
+        </p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            ref={cancelRef}
+            onClick={onCancel}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tickr-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            className="rounded-lg border border-red-200 bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-70"
+          >
+            {isPending ? 'Deleting…' : confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

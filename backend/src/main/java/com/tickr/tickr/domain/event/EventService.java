@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
@@ -72,7 +73,7 @@ public class EventService {
         // Create reminders for the event after it's persisted
         // If reminder creation fails, log the error but don't fail event creation
         try {
-            reminderService.createRemindersForEvent(savedEvent);
+            reminderService.createRemindersForEvent(savedEvent, request.getChannels());
         } catch (Exception e) {
             log.error("Failed to create reminders for event {}: {}", savedEvent.getId(), e.getMessage(), e);
         }
@@ -80,7 +81,9 @@ public class EventService {
         return savedEvent;
     }
 
+    @Transactional
     public void deleteEvent(UUID id) {
+        reminderService.deleteRemindersForEvent(id);
         this.eventRepository.deleteById(id);
     }
 

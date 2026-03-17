@@ -39,6 +39,9 @@ class ReminderServiceTest {
     @Mock
     private NotificationDispatcher notificationDispatcher;
 
+    @Mock
+    private ReminderDeliveryRepository reminderDeliveryRepository;
+
     @InjectMocks
     private ReminderService reminderService;
 
@@ -128,11 +131,11 @@ class ReminderServiceTest {
 
             given(reminderRepository.findDueReminders(any(Instant.class)))
                     .willReturn(List.of(reminder));
-            given(notificationService.create(reminder)).willReturn(mockNotification);
+            given(notificationService.createAll(reminder)).willReturn(List.of(mockNotification));
 
             reminderService.sendDueReminders();
 
-            then(notificationService).should().create(reminder);
+            then(notificationService).should().createAll(reminder);
             then(notificationDispatcher).should().send(mockNotification);
             assertThat(reminder.getStatus()).isEqualTo(Reminder.Status.SENT);
         }
@@ -145,7 +148,7 @@ class ReminderServiceTest {
 
             reminderService.sendDueReminders();
 
-            then(notificationService).should(never()).create(any());
+            then(notificationService).should(never()).createAll(any());
             then(notificationDispatcher).should(never()).send(any());
         }
 
@@ -156,7 +159,7 @@ class ReminderServiceTest {
 
             given(reminderRepository.findDueReminders(any(Instant.class)))
                     .willReturn(List.of(reminder));
-            given(notificationService.create(reminder))
+            given(notificationService.createAll(reminder))
                     .willThrow(new RuntimeException("Notification failed"));
 
             reminderService.sendDueReminders();
@@ -173,8 +176,8 @@ class ReminderServiceTest {
 
             given(reminderRepository.findDueReminders(any(Instant.class)))
                     .willReturn(List.of(successReminder, failReminder));
-            given(notificationService.create(successReminder)).willReturn(mockNotification);
-            given(notificationService.create(failReminder))
+            given(notificationService.createAll(successReminder)).willReturn(List.of(mockNotification));
+            given(notificationService.createAll(failReminder))
                     .willThrow(new RuntimeException("Failed"));
 
             reminderService.sendDueReminders();
@@ -193,7 +196,7 @@ class ReminderServiceTest {
         void shouldSkipPastEvents() {
             event.setStartTime(Instant.now().minus(Duration.ofDays(1)));
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should(never()).saveAll(anyList());
         }
@@ -203,7 +206,7 @@ class ReminderServiceTest {
         void shouldCreateRemindersForFutureEventWithOwnerOnly() {
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(anyList());
         }
@@ -218,7 +221,7 @@ class ReminderServiceTest {
                     .build();
             event.setAssignedUsers(Set.of(eventUser));
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(anyList());
         }
@@ -230,7 +233,7 @@ class ReminderServiceTest {
             event.setStartTime(Instant.now().plus(Duration.ofDays(10)));
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 List<Reminder> list = new ArrayList<>();
@@ -247,7 +250,7 @@ class ReminderServiceTest {
             event.setStartTime(Instant.now().plus(Duration.ofHours(2)));
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 List<Reminder> list = new ArrayList<>();
@@ -262,7 +265,7 @@ class ReminderServiceTest {
         void shouldSetCorrectStatusAndChannel() {
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 for (Reminder r : reminders) {
@@ -281,7 +284,7 @@ class ReminderServiceTest {
                     .when(reminderRepository).saveAll(anyList());
 
             org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
-                    () -> reminderService.createRemindersForEvent(event));
+                    () -> reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL)));
         }
 
         @Test
@@ -291,7 +294,7 @@ class ReminderServiceTest {
             event.setStartTime(Instant.now().plus(Duration.ofDays(5)));
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 List<Reminder> list = new ArrayList<>();
@@ -307,7 +310,7 @@ class ReminderServiceTest {
             event.setStartTime(Instant.now().plus(Duration.ofHours(5)));
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 List<Reminder> list = new ArrayList<>();
@@ -328,7 +331,7 @@ class ReminderServiceTest {
                     .build();
             event.setAssignedUsers(Set.of(eventUser));
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 List<Reminder> list = new ArrayList<>();
@@ -343,7 +346,7 @@ class ReminderServiceTest {
             event.setStartTime(Instant.now().plus(Duration.ofHours(2)));
             event.setAssignedUsers(null);
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(anyList());
         }
@@ -355,7 +358,7 @@ class ReminderServiceTest {
             event.setStartTime(Instant.now().plus(Duration.ofDays(3)).plus(Duration.ofHours(12)));
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 List<Reminder> list = new ArrayList<>();
@@ -371,7 +374,7 @@ class ReminderServiceTest {
             event.setStartTime(Instant.now().plus(Duration.ofDays(1)));
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 List<Reminder> list = new ArrayList<>();
@@ -387,7 +390,7 @@ class ReminderServiceTest {
             event.setStartTime(Instant.now().plus(Duration.ofMinutes(30)));
             event.setAssignedUsers(new HashSet<>());
 
-            reminderService.createRemindersForEvent(event);
+            reminderService.createRemindersForEvent(event, List.of(Reminder.Channel.EMAIL));
 
             then(reminderRepository).should().saveAll(argThat(reminders -> {
                 List<Reminder> list = new ArrayList<>();
@@ -398,7 +401,7 @@ class ReminderServiceTest {
     }
 
     private Reminder buildReminder(Reminder.Status status) {
-        return Reminder.builder()
+        Reminder reminder = Reminder.builder()
                 .id(UUID.randomUUID())
                 .event(event)
                 .user(owner)
@@ -406,5 +409,10 @@ class ReminderServiceTest {
                 .status(status)
                 .channel(Reminder.Channel.EMAIL)
                 .build();
+        reminder.getChannels().add(ReminderChannel.builder()
+                .reminder(reminder)
+                .channel(Reminder.Channel.EMAIL)
+                .build());
+        return reminder;
     }
 }

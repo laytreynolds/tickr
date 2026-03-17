@@ -6,6 +6,7 @@ import com.tickr.tickr.domain.notification.Notification;
 import com.tickr.tickr.domain.notification.NotificationService;
 import com.tickr.tickr.domain.user.User;
 import com.tickr.tickr.notification.NotificationDispatcher;
+import com.tickr.tickr.domain.reminder.ReminderChannel;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class ReminderService {
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
     private final NotificationDispatcher notificationDispatcher;
+    private final ReminderDeliveryRepository reminderDeliveryRepository;
 
     public List<Reminder> getReminders() {
         return reminderRepository.findAll();
@@ -39,15 +41,50 @@ public class ReminderService {
     }
 
     @Transactional
+    public void deleteRemindersForEvent(UUID eventId) {
+        reminderRepository.deleteByEventId(eventId);
+    }
+
+    @Transactional
     public void sendDueReminders() {
         List<Reminder> reminders = reminderRepository.findDueReminders(Instant.now());
         int successCount = 0;
         int failureCount = 0;
         for (Reminder reminder : reminders) {
             try {
-                Notification notification = notificationService.create(reminder);
-                notificationDispatcher.send(notification);
-                reminder.markSent();
+                List<Notification> notifications = notificationService.createAll(reminder);
+                boolean hasFailure = false;
+
+                for (Notification notification : notifications) {
+                    ReminderDelivery delivery = ReminderDelivery.builder()
+                            .reminder(reminder)
+                            .channel(notification.getChannel())
+                            .status(ReminderDelivery.Status.PENDING)
+                            .attemptCount(0)
+                            .build();
+
+                    try {
+                        delivery.setAttemptCount(delivery.getAttemptCount() + 1);
+                        delivery.setLastAttemptAt(Instant.now());
+                        notificationDispatcher.send(notification);
+                        delivery.setStatus(ReminderDelivery.Status.SENT);
+                        delivery.setSentAt(Instant.now());
+                    } catch (Exception e) {
+                        hasFailure = true;
+                        delivery.setStatus(ReminderDelivery.Status.FAILED);
+                        delivery.setLastError(e.getMessage());
+                        log.warn("Reminder delivery failed for reminder id: {} channel: {} - {}",
+                                reminder.getId(), notification.getChannel(), e.getMessage());
+                    } finally {
+                        reminderDeliveryRepository.save(delivery);
+                    }
+                }
+
+                if (hasFailure) {
+                    reminder.setStatus(Reminder.Status.FAILED);
+                } else {
+                    reminder.markSent();
+                }
                 successCount++;
                 log.debug("Reminder send successful for id: {}", reminder.getId());
             } catch (Exception e) {
@@ -62,7 +99,7 @@ public class ReminderService {
     }
 
     @Transactional
-    public void createRemindersForEvent(Event event) {
+    public void createRemindersForEvent(Event event, List<Reminder.Channel> requestedChannels) {
         try {
             Instant now = Instant.now();
             Instant eventStartTime = event.getStartTime();
@@ -72,6 +109,11 @@ public class ReminderService {
                 log.warn("Skipping reminder creation for past event: {}", event.getId());
                 return;
             }
+
+            // Default to EMAIL if no channels provided
+            List<Reminder.Channel> channels = (requestedChannels != null && !requestedChannels.isEmpty())
+                    ? requestedChannels.stream().distinct().toList()
+                    : List.of(Reminder.Channel.EMAIL);
 
             // Calculate reminder timestamps
             List<Instant> reminderTimestamps = calculateReminderTimestamps(eventStartTime, now);
@@ -100,8 +142,14 @@ public class ReminderService {
                             .user(user)
                             .remindAt(remindAt)
                             .status(Reminder.Status.PENDING)
-                            .channel(Reminder.Channel.EMAIL)
+                            .channel(channels.get(0))
                             .build();
+                    for (Reminder.Channel channel : channels) {
+                        reminder.getChannels().add(ReminderChannel.builder()
+                                .reminder(reminder)
+                                .channel(channel)
+                                .build());
+                    }
                     reminders.add(reminder);
                 }
             }

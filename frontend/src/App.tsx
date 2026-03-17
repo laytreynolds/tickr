@@ -38,7 +38,7 @@ function App() {
     }
     return stored
   })
-  const [activeTab, setActiveTab] = useState<MainTab>('reminders')
+  const [activeTab, setActiveTab] = useState<MainTab>('events')
 
   useEffect(() => {
     if (auth) setAuthToken(auth.accessToken)
@@ -83,17 +83,6 @@ function App() {
               <nav className="mt-1 flex gap-1" aria-label="Main">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('reminders')}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tickr-500 focus-visible:ring-offset-1 dark:ring-offset-slate-800 ${
-                    activeTab === 'reminders'
-                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-200'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600'
-                  }`}
-                >
-                  Reminders
-                </button>
-                <button
-                  type="button"
                   onClick={() => setActiveTab('events')}
                   className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tickr-500 focus-visible:ring-offset-1 dark:ring-offset-slate-800 ${
                     activeTab === 'events'
@@ -102,6 +91,17 @@ function App() {
                   }`}
                 >
                   Events
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('reminders')}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tickr-500 focus-visible:ring-offset-1 dark:ring-offset-slate-800 ${
+                    activeTab === 'reminders'
+                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-200'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600'
+                  }`}
+                >
+                  Reminders
                 </button>
                 <button
                   type="button"
@@ -116,10 +116,10 @@ function App() {
                 </button>
               </nav>
               <p className="py-2 pl-1 text-xs text-slate-500 dark:text-slate-400">
-                {activeTab === 'reminders'
-                  ? 'Human-friendly view of your scheduled nudges.'
-                  : activeTab === 'events'
-                    ? 'Create and manage events.'
+                {activeTab === 'events'
+                  ? 'Create and manage events.'
+                  : activeTab === 'reminders'
+                    ? 'Human-friendly view of your scheduled nudges.'
                     : activeTab === 'admin'
                       ? 'Manage users.'
                       : ''}
@@ -140,8 +140,8 @@ function App() {
       </div>
 
       <main className="mx-auto flex max-w-6xl flex-1 flex-col px-4 pb-8 pt-6 sm:px-6 lg:px-8">
-        {activeTab === 'reminders' && <RemindersPage />}
         {activeTab === 'events' && <EventsPage />}
+        {activeTab === 'reminders' && <RemindersPage />}
         {activeTab === 'admin' && <AdminPage />}
       </main>
     </div>

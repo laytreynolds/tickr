@@ -1,6 +1,8 @@
 package com.tickr.tickr.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tickr.tickr.domain.reminder.Reminder;
+
 import lombok.Data;
 
 import java.time.Instant;
@@ -28,5 +30,8 @@ public class CreateEventRequest {
 
     @JsonProperty("timezone")
     private String timezone;
+
+    @JsonProperty("channels")
+    private List<Reminder.Channel> channels;
 
 }

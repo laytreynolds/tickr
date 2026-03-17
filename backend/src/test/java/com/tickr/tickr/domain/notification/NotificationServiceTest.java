@@ -2,6 +2,7 @@ package com.tickr.tickr.domain.notification;
 
 import com.tickr.tickr.domain.event.Event;
 import com.tickr.tickr.domain.reminder.Reminder;
+import com.tickr.tickr.domain.reminder.ReminderChannel;
 import com.tickr.tickr.domain.user.User;
 import com.tickr.tickr.dto.EmailNotification;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +47,7 @@ class NotificationServiceTest {
                 .source(0)
                 .build();
 
-        reminder = Reminder.builder()
+        Reminder r = Reminder.builder()
                 .id(UUID.randomUUID())
                 .event(event)
                 .user(user)
@@ -54,6 +55,8 @@ class NotificationServiceTest {
                 .status(Reminder.Status.PENDING)
                 .channel(Reminder.Channel.EMAIL)
                 .build();
+        r.getChannels().add(ReminderChannel.builder().reminder(r).channel(Reminder.Channel.EMAIL).build());
+        reminder = r;
     }
 
     @Test
@@ -62,26 +65,26 @@ class NotificationServiceTest {
         NotificationBuilder emailBuilder = mock(NotificationBuilder.class);
         EmailNotification expectedNotification = new EmailNotification("test@test.com", "Subject", "Body");
 
-        given(emailBuilder.supports(reminder)).willReturn(true);
-        given(emailBuilder.build(reminder)).willReturn(expectedNotification);
+        given(emailBuilder.supports(Reminder.Channel.EMAIL)).willReturn(true);
+        given(emailBuilder.build(reminder, Reminder.Channel.EMAIL)).willReturn(expectedNotification);
 
         notificationService = new NotificationService(List.of(emailBuilder));
 
-        Notification result = notificationService.create(reminder);
+        List<Notification> result = notificationService.createAll(reminder);
 
-        assertThat(result).isEqualTo(expectedNotification);
-        assertThat(result.getChannel()).isEqualTo(Reminder.Channel.EMAIL);
+        assertThat(result).hasSize(1).first().isEqualTo(expectedNotification);
+        assertThat(result.get(0).getChannel()).isEqualTo(Reminder.Channel.EMAIL);
     }
 
     @Test
     @DisplayName("should throw when no builder supports the reminder channel")
     void shouldThrowWhenNoBuilderSupportsChannel() {
         NotificationBuilder emailBuilder = mock(NotificationBuilder.class);
-        given(emailBuilder.supports(reminder)).willReturn(false);
+        given(emailBuilder.supports(Reminder.Channel.EMAIL)).willReturn(false);
 
         notificationService = new NotificationService(List.of(emailBuilder));
 
-        assertThatThrownBy(() -> notificationService.create(reminder))
+        assertThatThrownBy(() -> notificationService.createAll(reminder))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No builder found for reminder channel");
     }
@@ -91,7 +94,7 @@ class NotificationServiceTest {
     void shouldThrowWhenNoBuilders() {
         notificationService = new NotificationService(Collections.emptyList());
 
-        assertThatThrownBy(() -> notificationService.create(reminder))
+        assertThatThrownBy(() -> notificationService.createAll(reminder))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No builder found for reminder channel");
     }
@@ -103,13 +106,13 @@ class NotificationServiceTest {
         NotificationBuilder secondBuilder = mock(NotificationBuilder.class);
         EmailNotification firstNotification = new EmailNotification("first@test.com", "First", "Body");
 
-        given(firstBuilder.supports(reminder)).willReturn(true);
-        given(firstBuilder.build(reminder)).willReturn(firstNotification);
+        given(firstBuilder.supports(Reminder.Channel.EMAIL)).willReturn(true);
+        given(firstBuilder.build(reminder, Reminder.Channel.EMAIL)).willReturn(firstNotification);
 
         notificationService = new NotificationService(List.of(firstBuilder, secondBuilder));
 
-        Notification result = notificationService.create(reminder);
+        List<Notification> result = notificationService.createAll(reminder);
 
-        assertThat(result).isEqualTo(firstNotification);
+        assertThat(result).hasSize(1).first().isEqualTo(firstNotification);
     }
 }

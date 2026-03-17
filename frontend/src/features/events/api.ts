@@ -34,6 +34,20 @@ export function useCreateEvent() {
   })
 }
 
+export function useDeleteEvent() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (eventId: string) => {
+      await apiClient.delete(`/api/v1/event/deleteevent/${eventId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: EVENTS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ['reminders'] })
+    },
+  })
+}
+
 export function useUsers() {
   return useQuery({
     queryKey: USERS_QUERY_KEY,
