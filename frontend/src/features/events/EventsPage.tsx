@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CreateEventRequest, Event, ReminderChannel, User } from './types'
 import { useCreateEvent, useDeleteEvent, useEvents, useUsers } from './api'
+import { useReminders } from '../reminders/api'
 import { EventsTable } from '../../components/EventsTable'
 import FadeIn from '../../components/FadeIn'
 
@@ -121,6 +122,7 @@ const defaultFormState: FormState = {
 export function EventsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null)
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null)
   const [formState, setFormState] = useState<FormState>(defaultFormState)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -129,9 +131,14 @@ export function EventsPage() {
 
   const eventsQuery = useEvents()
   const usersQuery = useUsers()
+  const remindersQuery = useReminders()
   const createEvent = useCreateEvent()
   const deleteEvent = useDeleteEvent()
   const timeZoneOptions = getTimeZoneOptions()
+
+  const handleToggleReminders = useCallback((eventId: string) => {
+    setExpandedEventId((prev) => (prev === eventId ? null : eventId))
+  }, [])
 
   useEffect(() => {
     if (showAddModal) {
@@ -338,6 +345,9 @@ export function EventsPage() {
       <EventsTable
         events={eventsQuery.data ?? []}
         users={usersQuery.data ?? []}
+        reminders={remindersQuery.data ?? []}
+        expandedEventId={expandedEventId}
+        onToggleExpand={handleToggleReminders}
         isLoading={eventsQuery.isLoading}
         isError={eventsQuery.isError}
         showEmptyState={showEmptyState}

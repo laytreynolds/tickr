@@ -60,7 +60,7 @@ export function RemindersPage() {
         if (terms.length === 0) return matchesStatus && matchesChannel
 
         const fields = [
-          reminder.event?.name,
+          reminder.event?.title,
           reminder.event?.description,
           reminder.user?.name,
           reminder.user?.email,
@@ -148,7 +148,7 @@ export function RemindersPage() {
       {reminderToDelete && (
         <ConfirmDialog
           title="Delete reminder?"
-          message={`Delete reminder for "${reminderToDelete.event?.name ?? reminderToDelete.user?.name ?? reminderToDelete.user?.email ?? reminderToDelete.user?.phoneNumber ?? reminderToDelete.id}" scheduled at ${formatDateTime(reminderToDelete.remindAt)}?`}
+          message={`Delete reminder for "${reminderToDelete.event?.title ?? reminderToDelete.user?.name ?? reminderToDelete.user?.email ?? reminderToDelete.user?.phoneNumber ?? reminderToDelete.id}" scheduled at ${formatDateTime(reminderToDelete.remindAt)}?`}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           variant="danger"

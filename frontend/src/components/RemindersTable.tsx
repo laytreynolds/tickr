@@ -28,7 +28,7 @@ function groupRemindersByEventAndChannel(reminders: Reminder[]): EventChannelGro
   const eventNames = new Map<string, string>()
   for (const r of reminders) {
     const id = r.event?.id ?? '__no_event__'
-    const name = r.event?.name?.trim() || 'Untitled event'
+    const name = r.event?.title?.trim() || 'Untitled event'
     if (!eventNames.has(id)) eventNames.set(id, name)
   }
 
@@ -163,7 +163,7 @@ export function RemindersTable({
                           >
                             <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-200">
                               <div className="font-medium">
-                                {reminder.event?.name || 'Untitled event'}
+                                {reminder.event?.title || 'Untitled event'}
                               </div>
                               <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                 {reminder.user?.name || 'Unknown user'}

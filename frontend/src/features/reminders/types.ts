@@ -4,7 +4,8 @@ export type ReminderChannel = 'SMS' | 'PHONE' | 'EMAIL'
 
 export interface ReminderEvent {
   id: string
-  name?: string
+  /** Event title (API returns `title`, not `name`) */
+  title?: string
   description?: string
 }
 
