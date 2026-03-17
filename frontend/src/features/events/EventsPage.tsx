@@ -669,7 +669,6 @@ function ConfirmDialog({
   message,
   confirmLabel,
   cancelLabel,
-  variant,
   onConfirm,
   onCancel,
   cancelRef,
