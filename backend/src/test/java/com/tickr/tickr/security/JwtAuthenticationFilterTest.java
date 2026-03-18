@@ -66,9 +66,9 @@ class JwtAuthenticationFilterTest {
         }
 
         @Test
-        @DisplayName("should skip ping endpoints")
-        void shouldSkipPingEndpoints() {
-            given(request.getRequestURI()).willReturn("/tickr/api/v1/ping/**");
+        @DisplayName("should skip health endpoints")
+        void shouldSkipHealthEndpoints() {
+            given(request.getRequestURI()).willReturn("/tickr/health/**");
             assertThat(filter.shouldNotFilter(request)).isTrue();
         }
 

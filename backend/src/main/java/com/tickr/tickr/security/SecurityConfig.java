@@ -50,13 +50,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
-                                "/tickr/api/v1/ping",
                                 "/tickr/api/v1/auth/**",
                                 "/actuator/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/swagger-ui/index.html")
+                                "/swagger-ui/index.html",
+                                "/tickr/health",
+                                "/tickr/health/liveness",
+                                "/health/readiness")
                         .permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex

@@ -24,16 +24,16 @@ class DomainControllerTest {
     private UserDetailsService userDetailsService;
 
     @Nested
-    @DisplayName("GET /tickr/api/v1/ping")
+    @DisplayName("GET /tickr/health")
     class Ping {
 
         @Test
         @WithMockUser
-        @DisplayName("should return 200 with 'pong'")
+        @DisplayName("should return 200 with 'OK'")
         void shouldReturnPong() throws Exception {
-            mockMvc.perform(get("/tickr/api/v1/ping"))
+            mockMvc.perform(get("/tickr/health"))
                     .andExpect(status().isOk())
-                    .andExpect(content().string("pong"));
+                    .andExpect(content().string("OK"));
         }
     }
 }

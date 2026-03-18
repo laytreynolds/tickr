@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../lib/apiClient'
-import type { CreateEventRequest, Event, User } from './types'
+import type { CreateEventRequest, Event, RemindNowRequest, User } from './types'
 
 export const EVENTS_QUERY_KEY = ['events']
 export const USERS_QUERY_KEY = ['users']
@@ -43,6 +43,19 @@ export function useDeleteEvent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: EVENTS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ['reminders'] })
+    },
+  })
+}
+
+export function useRemindNow() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (body: RemindNowRequest) => {
+      await apiClient.post('/api/v1/event/remindnow', body)
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders'] })
     },
   })

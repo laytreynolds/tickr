@@ -7,6 +7,8 @@ import com.tickr.tickr.dto.SmsRequest;
 import com.tickr.tickr.http.HttpRequestBuilder;
 import com.tickr.tickr.http.HttpRequestBuilder.HttpResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,17 +18,21 @@ import java.util.List;
 @Component
 public class SmsNotificationSender implements NotificationSender {
 
-    private static final String URL = "${sms.url}";
+    private static final Logger log = LoggerFactory.getLogger(SmsNotificationSender.class);
 
     private final HttpRequestBuilder httpRequestBuilder;
+    private final String url;
     private final String username;
     private final String password;
 
     public SmsNotificationSender(
             HttpRequestBuilder httpRequestBuilder,
+            @Value("${sms.url:}") String url,
             @Value("${sms.username}") String username,
             @Value("${sms.password}") String password) {
+
         this.httpRequestBuilder = httpRequestBuilder;
+        this.url = url;
         this.username = username;
         this.password = password;
     }
@@ -53,8 +59,12 @@ public class SmsNotificationSender implements NotificationSender {
     }
 
     private HttpResponse sendSms(SmsRequest request, String auth) {
+        if (url == null || url.isBlank()) {
+            throw new IllegalStateException("SMS_URL is not configured (missing sms.url)");
+        }
+        log.debug("Sending SMS request to {} with body: {}", url, request);
         return httpRequestBuilder
-                .url(URL)
+                .url(url)
                 .contentType("application/json")
                 .authorization(auth)
                 .body(request)

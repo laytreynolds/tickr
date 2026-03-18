@@ -10,7 +10,9 @@ springdoc:
 
 logging:
   level:
-    org.flywaydb: DEBUG
+    root: INFO
+    com.tickr.tickr: INFO
+    com.tickr.tickr.notification.SmsNotificationSender: DEBUG
 
 management:
   endpoints.web.exposure.include: health,metrics,flyway

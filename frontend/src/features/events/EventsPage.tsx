@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CreateEventRequest, Event, ReminderChannel, User } from './types'
-import { useCreateEvent, useDeleteEvent, useEvents, useUsers } from './api'
+import { useCreateEvent, useDeleteEvent, useEvents, useRemindNow, useUsers } from './api'
 import { useReminders } from '../reminders/api'
 import { EventsTable } from '../../components/EventsTable'
 import FadeIn from '../../components/FadeIn'
@@ -126,6 +126,9 @@ export function EventsPage() {
   const [formState, setFormState] = useState<FormState>(defaultFormState)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [remindNowMessage, setRemindNowMessage] = useState<string | null>(null)
+  const [remindNowError, setRemindNowError] = useState<string | null>(null)
+  const [remindNowEventIdPending, setRemindNowEventIdPending] = useState<string | null>(null)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
   const deleteCancelRef = useRef<HTMLButtonElement>(null)
 
@@ -134,6 +137,7 @@ export function EventsPage() {
   const remindersQuery = useReminders()
   const createEvent = useCreateEvent()
   const deleteEvent = useDeleteEvent()
+  const remindNow = useRemindNow()
   const timeZoneOptions = getTimeZoneOptions()
 
   const handleToggleReminders = useCallback((eventId: string) => {
@@ -180,6 +184,8 @@ export function EventsPage() {
     setFormState({ ...defaultFormState, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC' })
     setSubmitError(null)
     setSuccessMessage(null)
+    setRemindNowMessage(null)
+    setRemindNowError(null)
     setShowAddModal(true)
   }, [])
 
@@ -191,6 +197,31 @@ export function EventsPage() {
   const handleDeleteClick = useCallback((event: Event) => {
     setEventToDelete(event)
   }, [])
+
+  const handleRemindNow = useCallback(
+    (event: Event, channel: ReminderChannel) => {
+      setRemindNowMessage(null)
+      setRemindNowError(null)
+      setRemindNowEventIdPending(event.id)
+      remindNow.mutate(
+        { event_id: event.id, channels: [channel] },
+        {
+          onSuccess: () => {
+            setRemindNowMessage(`Reminder queued via ${channel === 'PHONE' ? 'Phone' : channel}.`)
+          },
+          onError: (err: Error & { response?: { data?: unknown } }) => {
+            const message =
+              err.response?.data != null && typeof (err.response.data as { message?: string }).message === 'string'
+                ? (err.response.data as { message: string }).message
+                : err.message ?? 'Failed to send reminder.'
+            setRemindNowError(message)
+          },
+          onSettled: () => setRemindNowEventIdPending(null),
+        },
+      )
+    },
+    [remindNow],
+  )
 
   const handleConfirmDeleteEvent = useCallback(() => {
     if (!eventToDelete) return
@@ -340,6 +371,24 @@ export function EventsPage() {
         </div>
       )}
 
+      {remindNowMessage && (
+        <div
+          role="status"
+          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
+        >
+          {remindNowMessage}
+        </div>
+      )}
+
+      {remindNowError && (
+        <div
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200"
+        >
+          {remindNowError}
+        </div>
+      )}
+
       <FadeIn delay={0.2}>
 
       <EventsTable
@@ -353,6 +402,8 @@ export function EventsPage() {
         showEmptyState={showEmptyState}
         onDeleteClick={handleDeleteClick}
         isDeletePending={deleteEvent.isPending}
+        onRemindNow={handleRemindNow}
+        remindNowEventIdPending={remindNowEventIdPending}
       />
       </FadeIn>
 

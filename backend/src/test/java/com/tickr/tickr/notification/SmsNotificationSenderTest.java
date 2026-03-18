@@ -33,7 +33,7 @@ class SmsNotificationSenderTest {
 
     @BeforeEach
     void setUp() {
-        sender = new SmsNotificationSender(httpRequestBuilder, "testuser", "testpass");
+        sender = new SmsNotificationSender(httpRequestBuilder, "https://example.test/sms", "testuser", "testpass");
     }
 
     @Nested
@@ -151,7 +151,11 @@ class SmsNotificationSenderTest {
         @Test
         @DisplayName("should throw when username is null")
         void shouldThrowWhenUsernameNull() {
-            SmsNotificationSender nullUserSender = new SmsNotificationSender(httpRequestBuilder, null, "pass");
+            SmsNotificationSender nullUserSender = new SmsNotificationSender(
+                    httpRequestBuilder,
+                    "https://example.test/sms",
+                    null,
+                    "pass");
             SmsNotification notification = new SmsNotification("+1234", "Test");
 
             assertThatThrownBy(() -> nullUserSender.send(notification))
@@ -162,7 +166,11 @@ class SmsNotificationSenderTest {
         @Test
         @DisplayName("should throw when password is null")
         void shouldThrowWhenPasswordNull() {
-            SmsNotificationSender nullPassSender = new SmsNotificationSender(httpRequestBuilder, "user", null);
+            SmsNotificationSender nullPassSender = new SmsNotificationSender(
+                    httpRequestBuilder,
+                    "https://example.test/sms",
+                    "user",
+                    null);
             SmsNotification notification = new SmsNotification("+1234", "Test");
 
             assertThatThrownBy(() -> nullPassSender.send(notification))

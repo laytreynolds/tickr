@@ -3,6 +3,7 @@ package com.tickr.tickr.api;
 import com.tickr.tickr.domain.event.EventService;
 import com.tickr.tickr.dto.CreateEventRequest;
 import com.tickr.tickr.dto.EventResponse;
+import com.tickr.tickr.dto.RemindNowRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,5 +42,11 @@ public class EventController {
     public ResponseEntity<EventResponse> addEvent(@RequestBody CreateEventRequest request) {
         EventResponse createdEvent = eventService.toResponse(eventService.createEvent(request));
         return ResponseEntity.ok(createdEvent);
+    }
+
+    @PostMapping("/remindnow")
+    public ResponseEntity<Void> remindNow(@RequestBody RemindNowRequest request) {
+        this.eventService.remindNow(request.getEventId(), request.getChannels());
+        return ResponseEntity.ok().build();
     }
 }

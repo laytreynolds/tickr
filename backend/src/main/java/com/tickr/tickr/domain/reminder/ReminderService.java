@@ -94,7 +94,7 @@ public class ReminderService {
             }
         }
 
-        log.info("Processed {} reminder(s): {} successful, {} failed",
+        log.debug("Processed {} reminder(s): {} successful, {} failed",
                 reminders.size(), successCount, failureCount);
     }
 
@@ -157,7 +157,7 @@ public class ReminderService {
             // Batch save all reminders
             if (!reminders.isEmpty()) {
                 reminderRepository.saveAll(reminders);
-                log.info("Successfully created {} reminder(s) for event {} ({} users, {} timestamps)",
+                log.debug("Successfully created {} reminder(s) for event {} ({} users, {} timestamps)",
                         reminders.size(), event.getTitle(), usersToNotify.size(), reminderTimestamps.size());
             }
         } catch (Exception e) {
@@ -206,5 +206,112 @@ public class ReminderService {
         timestamps.removeIf(timestamp -> timestamp.isBefore(now));
 
         return timestamps;
+    }
+
+    @Transactional
+    public void remindNow(Event event, List<Reminder.Channel> channels) {
+        List<Reminder.Channel> selectedChannels = (channels == null)
+                ? List.of()
+                : channels.stream().distinct().toList();
+
+        if (selectedChannels.isEmpty()) {
+            throw new IllegalArgumentException("At least one channel is required");
+        }
+
+        Instant now = Instant.now();
+
+        // Event owner and explicit event participants.
+        Set<User> usersToNotify = new HashSet<>();
+        usersToNotify.add(event.getOwner());
+        if (event.getAssignedUsers() != null) {
+            for (EventUser eventUser : event.getAssignedUsers()) {
+                usersToNotify.add(eventUser.getUser());
+            }
+        }
+
+        if (usersToNotify.isEmpty()) {
+            log.warn("Remind-now requested for event {} but no users resolved", event.getId());
+            return;
+        }
+
+        List<Reminder> remindersToSend = new ArrayList<>(usersToNotify.size());
+        for (User user : usersToNotify) {
+            Reminder reminder = Reminder.builder()
+                    .event(event)
+                    .user(user)
+                    .remindAt(now)
+                    .status(Reminder.Status.PENDING)
+                    .channel(selectedChannels.get(0))
+                    .build();
+
+            for (Reminder.Channel channel : selectedChannels) {
+                reminder.getChannels().add(ReminderChannel.builder()
+                        .reminder(reminder)
+                        .channel(channel)
+                        .build());
+            }
+            remindersToSend.add(reminder);
+        }
+
+        List<Reminder> persisted = reminderRepository.saveAll(remindersToSend);
+
+        int successCount = 0;
+        int failureCount = 0;
+
+        for (Reminder reminder : persisted) {
+            boolean sent = sendReminderAndRecordDeliveries(reminder);
+            if (sent) {
+                successCount++;
+            } else {
+                failureCount++;
+            }
+        }
+
+        log.debug("Remind-now processed for event {}: {} sent, {} failed ({} channel(s))",
+                event.getId(), successCount, failureCount, selectedChannels.size());
+    }
+
+    private boolean sendReminderAndRecordDeliveries(Reminder reminder) {
+        try {
+            List<Notification> notifications = notificationService.createAll(reminder);
+            boolean hasFailure = false;
+
+            for (Notification notification : notifications) {
+                ReminderDelivery delivery = ReminderDelivery.builder()
+                        .reminder(reminder)
+                        .channel(notification.getChannel())
+                        .status(ReminderDelivery.Status.PENDING)
+                        .attemptCount(0)
+                        .build();
+
+                try {
+                    delivery.setAttemptCount(delivery.getAttemptCount() + 1);
+                    delivery.setLastAttemptAt(Instant.now());
+                    notificationDispatcher.send(notification);
+                    delivery.setStatus(ReminderDelivery.Status.SENT);
+                    delivery.setSentAt(Instant.now());
+                } catch (Exception e) {
+                    hasFailure = true;
+                    delivery.setStatus(ReminderDelivery.Status.FAILED);
+                    delivery.setLastError(e.getMessage());
+                    log.warn("Reminder delivery failed for reminder id: {} channel: {} - {}",
+                            reminder.getId(), notification.getChannel(), e.getMessage());
+                } finally {
+                    reminderDeliveryRepository.save(delivery);
+                }
+            }
+
+            if (hasFailure) {
+                reminder.setStatus(Reminder.Status.FAILED);
+                return false;
+            }
+
+            reminder.markSent();
+            return true;
+        } catch (Exception e) {
+            reminder.setStatus(Reminder.Status.FAILED);
+            log.warn("Reminder send failed for id: {} - {}", reminder.getId(), e.getMessage());
+            return false;
+        }
     }
 }

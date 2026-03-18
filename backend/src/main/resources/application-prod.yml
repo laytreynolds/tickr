@@ -8,3 +8,8 @@ springdoc:
     enabled: false
   api-docs: 
       enabled: false
+logging:
+  level:
+    root: WARN
+    org.springframework.web: WARN
+    com.tickr.tickr: WARN

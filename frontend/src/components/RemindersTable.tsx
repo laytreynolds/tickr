@@ -89,11 +89,7 @@ export function RemindersTable({
             Failed to load reminders
           </p>
           <p className="max-w-md text-xs text-slate-500 dark:text-slate-400">
-            Please ensure the Tickr backend is running on{' '}
-            <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] dark:bg-slate-700 dark:text-slate-200">
-              http://localhost:8080
-            </code>{' '}
-            (or update <code>VITE_API_BASE_URL</code>) and try again.
+            Please ensure the Tickr backend is running and try again.
           </p>
         </div>
       ) : showEmptyState ? (

@@ -15,6 +15,12 @@ export interface Event {
 /** Reminder channel values accepted by the API (create event). */
 export type ReminderChannel = 'SMS' | 'PHONE' | 'EMAIL'
 
+/** Request body for POST remindnow (snake_case). */
+export interface RemindNowRequest {
+  event_id: string
+  channels: ReminderChannel[]
+}
+
 /** Request body for POST addevent (snake_case). */
 export interface CreateEventRequest {
   owner_id: string

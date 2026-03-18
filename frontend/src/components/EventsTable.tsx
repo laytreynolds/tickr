@@ -1,5 +1,5 @@
-import { Fragment } from 'react'
-import type { Event, User } from '../features/events/types'
+import { Fragment, useCallback, useEffect, useId, useMemo, useState } from 'react'
+import type { Event, ReminderChannel, User } from '../features/events/types'
 import type { Reminder } from '../features/reminders/types'
 import { formatDateTime } from '../utils/formatDateTime'
 
@@ -21,6 +21,8 @@ interface EventsTableProps {
   showEmptyState: boolean
   onDeleteClick: (event: Event) => void
   isDeletePending: boolean
+  onRemindNow: (event: Event, channel: ReminderChannel) => void
+  remindNowEventIdPending: string | null
 }
 
 function getOwnerDisplay(users: User[], ownerId: string): string {
@@ -39,7 +41,44 @@ export function EventsTable({
   showEmptyState,
   onDeleteClick,
   isDeletePending,
+  onRemindNow,
+  remindNowEventIdPending,
 }: EventsTableProps) {
+  const remindNowDialogId = useId()
+  const [eventToRemindNow, setEventToRemindNow] = useState<Event | null>(null)
+
+  const remindNowChannels = useMemo<ReminderChannel[]>(
+    () => ['SMS', 'EMAIL', 'PHONE'],
+    [],
+  )
+
+  const closeRemindNowDialog = useCallback(() => {
+    setEventToRemindNow(null)
+  }, [])
+
+  useEffect(() => {
+    if (!eventToRemindNow) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        closeRemindNowDialog()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [eventToRemindNow, closeRemindNowDialog])
+
+  const baseActionButtonClassName =
+    'inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60'
+
+  const remindNowButtonClassName =
+    `${baseActionButtonClassName} border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus-visible:ring-emerald-200 ` +
+    'dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200 dark:hover:bg-emerald-900/40 dark:focus-visible:ring-emerald-800'
+
+  const deleteButtonClassName =
+    `${baseActionButtonClassName} border-red-100 bg-red-50 text-red-700 hover:bg-red-100 focus-visible:ring-red-200 ` +
+    'dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800'
+
   function getRemindersForEvent(eventId: string): Reminder[] {
     return reminders.filter((r) => r.event?.id === eventId)
   }
@@ -173,14 +212,24 @@ export function EventsTable({
                           {getOwnerDisplay(users, event.ownerId)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm">
-                          <button
-                            type="button"
-                            onClick={() => onDeleteClick(event)}
-                            className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
-                            disabled={isDeletePending}
-                          >
-                            Delete
-                          </button>
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEventToRemindNow(event)}
+                              className={remindNowButtonClassName}
+                              disabled={remindNowEventIdPending === event.id}
+                            >
+                              {remindNowEventIdPending === event.id ? 'Reminding…' : 'Remind now'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDeleteClick(event)}
+                              className={deleteButtonClassName}
+                              disabled={isDeletePending}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       {isExpanded && eventReminders.length > 0 && (
@@ -288,18 +337,80 @@ export function EventsTable({
                     </div>
                   )}
                   <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={() => onDeleteClick(event)}
-                      className="inline-flex items-center rounded-md border border-red-100 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/40 dark:focus-visible:ring-red-800"
-                      disabled={isDeletePending}
-                    >
-                      Delete
-                    </button>
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEventToRemindNow(event)}
+                        className={remindNowButtonClassName}
+                        disabled={remindNowEventIdPending === event.id}
+                      >
+                        {remindNowEventIdPending === event.id ? 'Reminding…' : 'Remind now'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteClick(event)}
+                        className={deleteButtonClassName}
+                        disabled={isDeletePending}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </article>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {eventToRemindNow && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={remindNowDialogId}
+        >
+          <div
+            className="absolute inset-0 bg-slate-900/50"
+            aria-hidden="true"
+            onClick={closeRemindNowDialog}
+          />
+          <div className="relative z-10 w-full max-w-xs rounded-xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-600 dark:bg-slate-800">
+            <h2
+              id={remindNowDialogId}
+              className="text-sm font-semibold text-slate-900 dark:text-slate-100"
+            >
+              Remind now
+            </h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Choose a channel for &quot;{eventToRemindNow.title}&quot;.
+            </p>
+
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {remindNowChannels.map((channel) => {
+                const isPendingForThisEvent = remindNowEventIdPending === eventToRemindNow.id
+                return (
+                  <button
+                    key={channel}
+                    type="button"
+                    className="btn btn-outline btn-xs"
+                    disabled={isPendingForThisEvent}
+                    onClick={() => {
+                      onRemindNow(eventToRemindNow, channel)
+                      closeRemindNowDialog()
+                    }}
+                  >
+                    {channel === 'PHONE' ? 'Phone' : channel}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button type="button" className="btn btn-ghost btn-xs" onClick={closeRemindNowDialog}>
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 package com.tickr.tickr.domain.event;
 
 import com.tickr.tickr.domain.reminder.ReminderService;
+import com.tickr.tickr.domain.reminder.Reminder;
 import com.tickr.tickr.domain.user.User;
 import com.tickr.tickr.domain.user.UserRepository;
 import com.tickr.tickr.dto.CreateEventRequest;
@@ -105,5 +106,11 @@ public class EventService {
                 event.getSource(),
                 event.getCreatedAt()
         );
+    }
+
+    public void remindNow(UUID eventId, List<Reminder.Channel> channels) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("event not found with id: " + eventId));
+        reminderService.remindNow(event, channels);
     }
 }

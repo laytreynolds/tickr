@@ -31,6 +31,11 @@ services:
     networks:
       - tickr-backend
       - proxy_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/tickr/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   promtail:
     image: grafana/promtail:2.9.3

@@ -20,7 +20,7 @@ public class ReminderScheduler {
 
     @PostConstruct
     public void init() {
-        log.info("ReminderScheduler initialized with poll rate: {} ms ({} seconds)",
+        log.debug("ReminderScheduler initialized with poll rate: {} ms ({} seconds)",
                 pollRateMs, pollRateMs / 1000);
     }
 

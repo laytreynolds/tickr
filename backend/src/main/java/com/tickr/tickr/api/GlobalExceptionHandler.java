@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -68,6 +69,13 @@ public class GlobalExceptionHandler {
             org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
         log.warn("User not found: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError("Authentication failed."));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoResourceFound(NoResourceFoundException ex) {
+        // Avoid noisy stack traces for "no handler" cases that fall through to static resources.
+        log.debug("No resource found for request: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError("Not found."));
     }
 
     @ExceptionHandler(Exception.class)

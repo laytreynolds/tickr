@@ -34,8 +34,8 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const checkBackendHealth = async () => {
     setHealthStatus('checking')
     try {
-      const { data } = await apiClient.get<string>('/api/v1/ping')
-      if (data === 'pong') {
+      const { data } = await apiClient.get<string>('/health')
+      if (data === 'OK') {
         setHealthStatus('up');
         setSnackbarMessage('Backend is up');
         setSnackbarSeverity('success');
